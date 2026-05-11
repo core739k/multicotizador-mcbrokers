@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<COTIZACION>
+    <ERROR>
+        <CODIGO>0288</CODIGO>
+        <MENSAJE>El vehículo no es válido para uso particular en esta versión.</MENSAJE>
+    </ERROR>
+</COTIZACION>

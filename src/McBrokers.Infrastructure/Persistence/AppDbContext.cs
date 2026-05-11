@@ -2,6 +2,7 @@ using McBrokers.Domain.Agents;
 using McBrokers.Domain.Audit;
 using McBrokers.Domain.Catalog;
 using McBrokers.Domain.Insurers;
+using McBrokers.Domain.Quotations;
 using Microsoft.EntityFrameworkCore;
 
 namespace McBrokers.Infrastructure.Persistence;
@@ -22,6 +23,9 @@ public class AppDbContext : DbContext
     public DbSet<BrandSynonym> BrandSynonyms => Set<BrandSynonym>();
     public DbSet<TransmissionSynonym> TransmissionSynonyms => Set<TransmissionSynonym>();
     public DbSet<CatalogImportBatch> CatalogImportBatches => Set<CatalogImportBatch>();
+    public DbSet<Quotation> Quotations => Set<Quotation>();
+    public DbSet<QuotationInsurerResult> QuotationInsurerResults => Set<QuotationInsurerResult>();
+    public DbSet<KnownInsurerError> KnownInsurerErrors => Set<KnownInsurerError>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

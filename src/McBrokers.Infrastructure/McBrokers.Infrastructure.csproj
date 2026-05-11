@@ -10,6 +10,8 @@
     <ProjectReference Include="..\McBrokers.Application\McBrokers.Application.csproj" />
     <ProjectReference Include="..\McBrokers.Domain\McBrokers.Domain.csproj" />
     <ProjectReference Include="..\McBrokers.SharedKernel\McBrokers.SharedKernel.csproj" />
+    <ProjectReference Include="..\McBrokers.Insurers.Abstractions\McBrokers.Insurers.Abstractions.csproj" />
+    <ProjectReference Include="..\McBrokers.Insurers.Gnp\McBrokers.Insurers.Gnp.csproj" />
   </ItemGroup>
 
   <ItemGroup>

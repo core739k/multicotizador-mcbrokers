@@ -2,14 +2,22 @@ using McBrokers.Application.Admin;
 using McBrokers.Application.Auth;
 using McBrokers.Application.Catalog;
 using McBrokers.Application.Ports;
+using McBrokers.Application.Quotations;
 using McBrokers.Domain.Catalog.Matching;
+using McBrokers.Domain.Insurers;
 using McBrokers.Infrastructure.Audit;
+using McBrokers.Infrastructure.Blob;
 using McBrokers.Infrastructure.Identity;
+using McBrokers.Infrastructure.Messaging;
 using McBrokers.Infrastructure.Persistence;
 using McBrokers.Infrastructure.Time;
+using McBrokers.Insurers.Abstractions;
+using McBrokers.Insurers.Gnp;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace McBrokers.Infrastructure;
 
@@ -36,6 +44,23 @@ public static class DependencyInjection
         services.AddScoped<IVehicleMasterRepository, VehicleMasterRepository>();
         services.AddScoped<IVehicleInsurerMappingRepository, VehicleInsurerMappingRepository>();
         services.AddScoped<ICatalogImportBatchRepository, CatalogImportBatchRepository>();
+        services.AddScoped<IQuotationRepository, QuotationRepository>();
+        services.AddScoped<IInsurerPackageMappingRepository, InsurerPackageMappingRepository>();
+        services.AddScoped<IInsurerCredentialProvider, KeyVaultCredentialProvider>();
+
+        // Blob (LocalDisk en dev; en prod el path llega de configuración o se sustituye por AzureBlobStore).
+        var blobRoot = configuration["Blob:LocalRoot"] ?? Path.Combine(Path.GetTempPath(), "mcbrokers-blobs");
+        services.AddSingleton<IBlobStore>(sp =>
+            new LocalDiskBlobStore(blobRoot, sp.GetRequiredService<ILogger<LocalDiskBlobStore>>()));
+
+        // Cola y worker
+        services.AddSingleton<IQuotationQueue, InMemoryQuotationQueue>();
+        services.AddHostedService<QuotationWorker>();
+
+        // Adapters de aseguradora (F3: solo GNP). Los demás se registran cuando se implementen en F4.
+        services.AddHttpClient<GnpQuoteAdapter>();
+        services.AddScoped<IInsurerAdapter, GnpQuoteAdapter>();
+        services.AddSingleton<TimeProvider>(TimeProvider.System);
 
         // Cross-cutting
         services.AddSingleton<IClock, SystemClock>();
@@ -59,6 +84,9 @@ public static class DependencyInjection
         services.AddScoped<DecideMapping>();
         services.AddScoped<GetCatalogForYear>();
         services.AddScoped<ListPendingMappings>();
+        services.AddScoped<RequestQuotation>();
+        services.AddScoped<GetQuotationStatus>();
+        services.AddScoped<ProcessQuotation>();
 
         services.AddMcBrokersGoogleAuthentication(configuration);
         services.AddAuthorization(options =>

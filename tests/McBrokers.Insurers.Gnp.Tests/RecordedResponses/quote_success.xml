@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<COTIZACION>
+    <SOLICITUD>
+        <NUM_COTIZACION>CIANNE231023021110</NUM_COTIZACION>
+    </SOLICITUD>
+    <PAQUETES>
+        <PAQUETE>
+            <TOTALES>
+                <TOTAL_PRIMA>
+                    <CONCEPTOS_ECONOMICOS>
+                        <CONCEPTO_ECONOMICO>
+                            <NOMBRE>TOTAL_PAGAR</NOMBRE>
+                            <MONTO>11638.92</MONTO>
+                        </CONCEPTO_ECONOMICO>
+                        <CONCEPTO_ECONOMICO>
+                            <NOMBRE>PRIMA_NETA</NOMBRE>
+                            <MONTO>9493.54</MONTO>
+                        </CONCEPTO_ECONOMICO>
+                        <CONCEPTO_ECONOMICO>
+                            <NOMBRE>IVA</NOMBRE>
+                            <MONTO>1605.38</MONTO>
+                        </CONCEPTO_ECONOMICO>
+                        <CONCEPTO_ECONOMICO>
+                            <NOMBRE>DERECHOS_POLIZA</NOMBRE>
+                            <MONTO>540.00</MONTO>
+                        </CONCEPTO_ECONOMICO>
+                        <CONCEPTO_ECONOMICO>
+                            <NOMBRE>PRIMER_RECIBO</NOMBRE>
+                            <MONTO>11638.92</MONTO>
+                        </CONCEPTO_ECONOMICO>
+                        <CONCEPTO_ECONOMICO>
+                            <NOMBRE>RECIBO_SUBSECUENTE</NOMBRE>
+                            <MONTO>0.0</MONTO>
+                        </CONCEPTO_ECONOMICO>
+                    </CONCEPTOS_ECONOMICOS>
+                </TOTAL_PRIMA>
+            </TOTALES>
+        </PAQUETE>
+    </PAQUETES>
+</COTIZACION>

@@ -1,0 +1,94 @@
+@page "{id:guid}"
+@model McBrokers.Web.Pages.Cotizacion.StatusModel
+@using McBrokers.Domain.Quotations
+@{
+    ViewData["Title"] = $"Cotización {Model.View?.Id.ToString().Substring(0, 8) ?? ""}";
+}
+
+@if (Model.View is null)
+{
+    <p class="text-muted">Cotización no encontrada.</p>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Cotización <code>@Model.View.CorrelationId</code></h2>
+        <span class="badge bg-@StatusColor(Model.View.Status) fs-6">@Model.View.Status</span>
+    </div>
+
+    <p class="text-muted">
+        @Model.View.Results.Count de @Model.View.ExpectedResultsCount aseguradoras respondieron.
+    </p>
+
+    @if (Model.View.Results.Count == 0)
+    {
+        <div class="alert alert-info">
+            Esperando respuesta de las aseguradoras… <span class="spinner-border spinner-border-sm"></span>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var r in Model.View.Results)
+            {
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100 @(r.Status == QuotationInsurerStatus.Succeeded ? "border-success" : "border-danger")">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                Aseguradora <small class="text-muted">@r.InsurerId.ToString().Substring(0, 8)</small>
+                                <span class="badge bg-@StatusColor(r.Status)">@r.Status</span>
+                            </h5>
+                            @if (r.Status == QuotationInsurerStatus.Succeeded)
+                            {
+                                <table class="table table-sm mb-0">
+                                    <tr><td>Prima total</td><td class="text-end"><strong>$@r.PremiumTotal?.ToString("N2")</strong></td></tr>
+                                    <tr><td>Prima neta</td><td class="text-end">$@r.PremiumNet?.ToString("N2")</td></tr>
+                                    <tr><td>IVA</td><td class="text-end">$@r.Tax?.ToString("N2")</td></tr>
+                                    <tr><td>Derechos</td><td class="text-end">$@r.Fees?.ToString("N2")</td></tr>
+                                </table>
+                                <small class="text-muted d-block mt-2">
+                                    Ref: <code>@r.ExternalQuoteRef</code> · @r.LatencyMs ms
+                                </small>
+                            }
+                            else
+                            {
+                                <p class="text-muted small mb-1">
+                                    <strong>@r.ErrorCategory</strong> — <code>@r.ErrorCode</code>
+                                </p>
+                                <p class="mb-0">@r.ErrorMessage</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+
+@section Scripts {
+    @if (Model.View?.Status is QuotationStatus.Pending or QuotationStatus.Partial)
+    {
+        <script>
+            setTimeout(function () { window.location.reload(); }, 2000);
+        </script>
+    }
+}
+
+@functions {
+    private static string StatusColor(QuotationStatus s) => s switch
+    {
+        QuotationStatus.Completed => "success",
+        QuotationStatus.Partial => "warning text-dark",
+        QuotationStatus.Failed => "danger",
+        _ => "secondary",
+    };
+
+    private static string StatusColor(QuotationInsurerStatus s) => s switch
+    {
+        QuotationInsurerStatus.Succeeded => "success",
+        QuotationInsurerStatus.Timeout => "warning text-dark",
+        QuotationInsurerStatus.InsurerDown => "danger",
+        QuotationInsurerStatus.NotCovered => "secondary",
+        _ => "danger",
+    };
+}

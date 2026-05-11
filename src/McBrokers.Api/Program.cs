@@ -45,6 +45,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 app.MapAdminInsurers();
 app.MapAdminAgents();
 app.MapCatalog();
+app.MapQuotations();
 
 app.Run();
 

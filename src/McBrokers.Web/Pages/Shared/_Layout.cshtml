@@ -24,7 +24,13 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-page="/Index">Inicio</a>
                         </li>
-                        @if (User.IsInRole("Admin"))
+                        @if (User?.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-page="/Cotizacion/Index">Cotizar</a>
+                            </li>
+                        }
+                        @if (User?.IsInRole("Admin") == true)
                         {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-page="/Admin/Index">Admin</a>
