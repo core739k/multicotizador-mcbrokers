@@ -1,0 +1,74 @@
+@page
+@model McBrokers.Web.Pages.Admin.Catalog.PendingModel
+@{
+    ViewData["Title"] = "Revisión de catálogo";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Mappings pendientes de revisión</h2>
+    <span class="text-muted">@Model.PendingPage.Total pendientes en total</span>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.Message))
+{
+    <div class="alert alert-info">@Model.Message</div>
+}
+
+@if (Model.PendingPage.Items.Count == 0)
+{
+    <p class="text-muted">No hay mappings pendientes. 🎉</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Score</th>
+                <th>Master (canónico)</th>
+                <th>Aseguradora (raw)</th>
+                <th>Clave externa</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.PendingPage.Items)
+            {
+                <tr>
+                    <td>
+                        <span class="badge bg-warning text-dark">@item.Mapping.ConfidenceScore.ToString("0.00")</span>
+                    </td>
+                    <td>
+                        <strong>@item.CandidateMaster.Year @item.CandidateMaster.Brand @item.CandidateMaster.Model</strong><br />
+                        <small class="text-muted">@item.CandidateMaster.Version</small>
+                    </td>
+                    <td>
+                        @item.Mapping.InsurerBrandRaw @item.Mapping.InsurerModelRaw<br />
+                        <small class="text-muted">@item.Mapping.InsurerVersionRaw</small>
+                    </td>
+                    <td><code>@item.Mapping.ExternalClave</code></td>
+                    <td>
+                        <form method="post" class="d-flex gap-2">
+                            <input type="hidden" name="MappingId" value="@item.Mapping.Id" />
+                            <button type="submit" asp-page-handler="Approve" class="btn btn-sm btn-success">Aprobar</button>
+                            <button type="submit" asp-page-handler="Reject" class="btn btn-sm btn-outline-danger">Rechazar</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav>
+            <ul class="pagination">
+                @for (int p = 1; p <= Model.TotalPages; p++)
+                {
+                    <li class="page-item @(p == Model.PendingPage.Page ? "active" : "")">
+                        <a class="page-link" asp-page="./Pending" asp-route-pageNumber="@p">@p</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+}
