@@ -1,0 +1,27 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/McBrokers.Api/McBrokers.Api.csproj" />
+    <Project Path="src/McBrokers.Application/McBrokers.Application.csproj" />
+    <Project Path="src/McBrokers.Domain/McBrokers.Domain.csproj" />
+    <Project Path="src/McBrokers.Infrastructure/McBrokers.Infrastructure.csproj" />
+    <Project Path="src/McBrokers.Insurers.Abstractions/McBrokers.Insurers.Abstractions.csproj" />
+    <Project Path="src/McBrokers.Insurers.Ana/McBrokers.Insurers.Ana.csproj" />
+    <Project Path="src/McBrokers.Insurers.AxaCol/McBrokers.Insurers.AxaCol.csproj" />
+    <Project Path="src/McBrokers.Insurers.AxaDxn/McBrokers.Insurers.AxaDxn.csproj" />
+    <Project Path="src/McBrokers.Insurers.Gnp/McBrokers.Insurers.Gnp.csproj" />
+    <Project Path="src/McBrokers.Insurers.Qualitas/McBrokers.Insurers.Qualitas.csproj" />
+    <Project Path="src/McBrokers.SharedKernel/McBrokers.SharedKernel.csproj" />
+    <Project Path="src/McBrokers.Web/McBrokers.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/McBrokers.Api.Tests/McBrokers.Api.Tests.csproj" />
+    <Project Path="tests/McBrokers.Application.Tests/McBrokers.Application.Tests.csproj" />
+    <Project Path="tests/McBrokers.Domain.Tests/McBrokers.Domain.Tests.csproj" />
+    <Project Path="tests/McBrokers.E2E.Tests/McBrokers.E2E.Tests.csproj" />
+    <Project Path="tests/McBrokers.Insurers.Ana.Tests/McBrokers.Insurers.Ana.Tests.csproj" />
+    <Project Path="tests/McBrokers.Insurers.AxaCol.Tests/McBrokers.Insurers.AxaCol.Tests.csproj" />
+    <Project Path="tests/McBrokers.Insurers.AxaDxn.Tests/McBrokers.Insurers.AxaDxn.Tests.csproj" />
+    <Project Path="tests/McBrokers.Insurers.Gnp.Tests/McBrokers.Insurers.Gnp.Tests.csproj" />
+    <Project Path="tests/McBrokers.Insurers.Qualitas.Tests/McBrokers.Insurers.Qualitas.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,4 @@
+# Migraciones generadas por dotnet ef — no aplicar reglas de estilo manuales.
+[*.cs]
+csharp_style_namespace_declarations = block_scoped:silent
+dotnet_diagnostic.IDE0161.severity = none

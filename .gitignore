@@ -1,0 +1,49 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+.vs/
+
+# User-specific
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / VS Code
+.idea/
+*.swp
+.vscode/launch.json
+
+# Test results
+[Tt]est[Rr]esult*/
+coverage*/
+*.coverage
+*.coveragexml
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+
+# ASP.NET / Razor
+*.cache
+appsettings.*.Development.json
+appsettings.*.Local.json
+
+# Secrets / Local config
+secrets.json
+**/wwwroot/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Generated client code (regenerated from OpenAPI)
+**/Generated/
+
+# Project-local Claude state
+.claude/settings.local.json

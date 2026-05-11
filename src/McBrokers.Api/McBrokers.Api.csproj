@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\McBrokers.Application\McBrokers.Application.csproj" />
+    <ProjectReference Include="..\McBrokers.Infrastructure\McBrokers.Infrastructure.csproj" />
+    <ProjectReference Include="..\McBrokers.SharedKernel\McBrokers.SharedKernel.csproj" />
+    <ProjectReference Include="..\McBrokers.Insurers.Gnp\McBrokers.Insurers.Gnp.csproj" />
+    <ProjectReference Include="..\McBrokers.Insurers.Qualitas\McBrokers.Insurers.Qualitas.csproj" />
+    <ProjectReference Include="..\McBrokers.Insurers.Ana\McBrokers.Insurers.Ana.csproj" />
+    <ProjectReference Include="..\McBrokers.Insurers.AxaDxn\McBrokers.Insurers.AxaDxn.csproj" />
+    <ProjectReference Include="..\McBrokers.Insurers.AxaCol\McBrokers.Insurers.AxaCol.csproj" />
+  </ItemGroup>
+
+</Project>
