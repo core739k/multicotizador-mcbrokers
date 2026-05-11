@@ -23,6 +23,7 @@ public sealed class ProcessQuotation
     private readonly IBlobStore _blob;
     private readonly IEnumerable<IInsurerAdapter> _adapters;
     private readonly IClock _clock;
+    private readonly IKnownInsurerErrorLookup _errorLookup;
 
     public ProcessQuotation(
         IQuotationRepository quotations,
@@ -34,7 +35,8 @@ public sealed class ProcessQuotation
         IInsurerCredentialProvider credentials,
         IBlobStore blob,
         IEnumerable<IInsurerAdapter> adapters,
-        IClock clock)
+        IClock clock,
+        IKnownInsurerErrorLookup errorLookup)
     {
         _quotations = quotations;
         _vehicles = vehicles;
@@ -46,6 +48,7 @@ public sealed class ProcessQuotation
         _blob = blob;
         _adapters = adapters;
         _clock = clock;
+        _errorLookup = errorLookup;
     }
 
     public async Task ExecuteAsync(Guid quotationId, CancellationToken cancellationToken)
@@ -140,22 +143,34 @@ public sealed class ProcessQuotation
         var (requestBlobRef, responseBlobRef) = await PersistBlobsAsync(
             quotation.CorrelationId, insurer.Code, outcome, cancellationToken).ConfigureAwait(false);
 
-        var result = outcome switch
+        QuotationInsurerResult result;
+        if (outcome is InsurerQuoteOutcome.Success s)
         {
-            InsurerQuoteOutcome.Success s => QuotationInsurerResult.SucceededResult(
+            result = QuotationInsurerResult.SucceededResult(
                 quotation.Id, insurer.Id,
                 s.Response.PremiumTotal, s.Response.PremiumNet, s.Response.Tax, s.Response.Fees,
                 s.Response.LatencyMs, s.Response.ExternalQuoteRef,
-                requestBlobRef, responseBlobRef, _clock.UtcNow).Value,
+                requestBlobRef, responseBlobRef, _clock.UtcNow).Value;
+        }
+        else if (outcome is InsurerQuoteOutcome.Failure f)
+        {
+            // Buscar el mensaje administrable; si no hay match, usar el mensaje crudo del adapter.
+            var known = await _errorLookup
+                .FindAsync(insurer.Id, f.Error.ExternalCode, cancellationToken)
+                .ConfigureAwait(false);
+            var humanMessage = known?.HumanMessage ?? f.Error.ExternalMessage;
+            var category = known?.Category ?? f.Error.Category;
 
-            InsurerQuoteOutcome.Failure f => QuotationInsurerResult.FailedResult(
+            result = QuotationInsurerResult.FailedResult(
                 quotation.Id, insurer.Id,
-                f.Error.Status, f.Error.Category,
-                f.Error.ExternalCode, f.Error.ExternalMessage,
-                f.Error.LatencyMs, requestBlobRef, responseBlobRef, _clock.UtcNow).Value,
-
-            _ => throw new InvalidOperationException("Unknown outcome type."),
-        };
+                f.Error.Status, category,
+                f.Error.ExternalCode, humanMessage,
+                f.Error.LatencyMs, requestBlobRef, responseBlobRef, _clock.UtcNow).Value;
+        }
+        else
+        {
+            throw new InvalidOperationException("Unknown outcome type.");
+        }
 
         quotation.RecordResult(result);
         await _quotations.AppendResultAsync(result, cancellationToken).ConfigureAwait(false);

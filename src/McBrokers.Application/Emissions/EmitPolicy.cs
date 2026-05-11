@@ -47,6 +47,7 @@ public sealed class EmitPolicy
     private readonly IAuditWriter _audit;
     private readonly IClock _clock;
     private readonly ICurrentAgentProvider _currentAgent;
+    private readonly IKnownInsurerErrorLookup _errorLookup;
 
     public EmitPolicy(
         IEmissionRepository emissions,
@@ -61,7 +62,8 @@ public sealed class EmitPolicy
         IEnumerable<IInsurerAdapter> adapters,
         IAuditWriter audit,
         IClock clock,
-        ICurrentAgentProvider currentAgent)
+        ICurrentAgentProvider currentAgent,
+        IKnownInsurerErrorLookup errorLookup)
     {
         _emissions = emissions;
         _quotations = quotations;
@@ -76,6 +78,7 @@ public sealed class EmitPolicy
         _audit = audit;
         _clock = clock;
         _currentAgent = currentAgent;
+        _errorLookup = errorLookup;
     }
 
     public async Task<Result<EmitPolicyResult>> ExecuteAsync(
@@ -125,14 +128,20 @@ public sealed class EmitPolicy
 
         if (outcome is InsurerEmitOutcome.Failure failure)
         {
-            emission.MarkFailed($"[{failure.Error.ExternalCode}] {failure.Error.ExternalMessage}");
+            // Enriquecer con mensaje administrable si existe.
+            var known = await _errorLookup
+                .FindAsync(ctx.Insurer.Id, failure.Error.ExternalCode, cancellationToken)
+                .ConfigureAwait(false);
+            var humanMessage = known?.HumanMessage ?? failure.Error.ExternalMessage;
+
+            emission.MarkFailed($"[{failure.Error.ExternalCode}] {humanMessage}");
             await _emissions.UpdateAsync(emission, cancellationToken).ConfigureAwait(false);
 
             await _audit.WriteAsync(
                 action: "Emission.Failed",
                 entityType: "Emission",
                 entityId: emission.Id.ToString(),
-                payload: new { command.QuotationInsurerResultId, failure.Error.ExternalCode, failure.Error.ExternalMessage },
+                payload: new { command.QuotationInsurerResultId, failure.Error.ExternalCode, humanMessage },
                 cancellationToken).ConfigureAwait(false);
 
             return Result<EmitPolicyResult>.Success(

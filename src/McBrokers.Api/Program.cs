@@ -1,10 +1,15 @@
 using McBrokers.Api.Endpoints;
 using McBrokers.Infrastructure;
+using McBrokers.Infrastructure.Observability;
 using McBrokers.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Host.UseMcBrokersSerilog();
+
+builder.Services.AddMcBrokersTelemetry(builder.Configuration);
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 
@@ -29,6 +34,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStatusCodePages();
+app.UseMcBrokersCorrelationId();
+app.UseSerilogRequestLogging();
 app.UseAuthentication();
 app.UseAuthorization();
 

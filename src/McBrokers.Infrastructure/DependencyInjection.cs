@@ -9,6 +9,7 @@ using McBrokers.Infrastructure.Audit;
 using McBrokers.Infrastructure.Blob;
 using McBrokers.Infrastructure.Identity;
 using McBrokers.Infrastructure.Messaging;
+using McBrokers.Infrastructure.Observability;
 using McBrokers.Infrastructure.Persistence;
 using McBrokers.Infrastructure.Time;
 using McBrokers.Insurers.Abstractions;
@@ -52,16 +53,32 @@ public static class DependencyInjection
         services.AddScoped<IInsurerPackageMappingRepository, InsurerPackageMappingRepository>();
         services.AddScoped<IInsurerCredentialProvider, KeyVaultCredentialProvider>();
         services.AddScoped<IEmissionRepository, EmissionRepository>();
+        services.AddScoped<IKnownInsurerErrorLookup, KnownInsurerErrorLookup>();
 
         // Email + PDF download (dev impls). Producción: Microsoft Graph/SendGrid + HttpClient resiliente.
         services.AddScoped<IEmailSender, Email.LogEmailSender>();
         services.AddHttpClient<Pdf.HttpPdfDownloader>();
         services.AddScoped<IPdfDownloader, Pdf.HttpPdfDownloader>();
 
-        // Blob (LocalDisk en dev; en prod el path llega de configuración o se sustituye por AzureBlobStore).
-        var blobRoot = configuration["Blob:LocalRoot"] ?? Path.Combine(Path.GetTempPath(), "mcbrokers-blobs");
-        services.AddSingleton<IBlobStore>(sp =>
-            new LocalDiskBlobStore(blobRoot, sp.GetRequiredService<ILogger<LocalDiskBlobStore>>()));
+        // Blob: si hay Storage:ConnectionString → AzureBlobStore; si no → LocalDiskBlobStore (dev).
+        var azureBlobConn = configuration["Storage:ConnectionString"]
+                         ?? configuration.GetConnectionString("AzureBlob");
+        if (!string.IsNullOrWhiteSpace(azureBlobConn))
+        {
+            var createOnDemand = configuration.GetValue<bool>("Storage:CreateContainerOnDemand");
+            services.AddSingleton(new Azure.Storage.Blobs.BlobServiceClient(azureBlobConn));
+            services.AddSingleton<IBlobStore>(sp => new AzureBlobStore(
+                sp.GetRequiredService<Azure.Storage.Blobs.BlobServiceClient>(),
+                sp.GetRequiredService<ILogger<AzureBlobStore>>(),
+                createOnDemand));
+        }
+        else
+        {
+            var blobRoot = configuration["Blob:LocalRoot"]
+                ?? Path.Combine(Path.GetTempPath(), "mcbrokers-blobs");
+            services.AddSingleton<IBlobStore>(sp =>
+                new LocalDiskBlobStore(blobRoot, sp.GetRequiredService<ILogger<LocalDiskBlobStore>>()));
+        }
 
         // Cola y worker
         services.AddSingleton<IQuotationQueue, InMemoryQuotationQueue>();
@@ -71,15 +88,17 @@ public static class DependencyInjection
         services.AddHostedService<Startup.InsurersSeed>();
         services.AddHostedService<Startup.KnownInsurerErrorsSeed>();
 
-        // Adapters de aseguradora. Cada uno con su HttpClient nombrado para timeouts/handlers propios.
-        services.AddHttpClient<GnpQuoteAdapter>();
-        services.AddHttpClient<QualitasQuoteAdapter>();
-        services.AddHttpClient<AnaQuoteAdapter>();
-        services.AddHttpClient<AnaPostalCodeResolver>();
+        // Adapters de aseguradora. Cada HttpClient con su política de resilience (Polly v8):
+        // - 3 reintentos exponenciales sobre 5xx, timeouts y errores de red.
+        // - Circuit breaker que abre tras 5 fallos consecutivos en 30s y se cierra después de 60s.
+        services.AddHttpClient<GnpQuoteAdapter>().AddMcBrokersResilience();
+        services.AddHttpClient<QualitasQuoteAdapter>().AddMcBrokersResilience();
+        services.AddHttpClient<AnaQuoteAdapter>().AddMcBrokersResilience();
+        services.AddHttpClient<AnaPostalCodeResolver>().AddMcBrokersResilience();
         services.AddMemoryCache();
         services.AddScoped<IAnaPostalCodeResolver, AnaPostalCodeResolver>();
-        services.AddHttpClient<AxaColQuoteAdapter>();
-        services.AddHttpClient<AxaDxnQuoteAdapter>();
+        services.AddHttpClient<AxaColQuoteAdapter>().AddMcBrokersResilience();
+        services.AddHttpClient<AxaDxnQuoteAdapter>().AddMcBrokersResilience();
         services.AddScoped<IInsurerAdapter, GnpQuoteAdapter>();
         services.AddScoped<IInsurerAdapter, QualitasQuoteAdapter>();
         services.AddScoped<IInsurerAdapter, AnaQuoteAdapter>();

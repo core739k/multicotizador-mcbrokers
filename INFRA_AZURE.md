@@ -186,6 +186,91 @@ az monitor app-insights component create `
   --workspace "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.OperationalInsights/workspaces/<workspace>"
 ```
 
+### 7.1 Dashboard ops — queries KQL listas
+
+Serilog escribe los eventos como `traces` con properties estructuradas: `CorrelationId`, `AgentId`, `RequestPath` (de `CorrelationIdMiddleware`), más cualquier `LogContext.PushProperty` que agreguen los use cases (por ej. `InsurerCode`, `QuotationId`).
+
+Crear un Workbook en App Insights con estas tiles:
+
+**Tasa de éxito por aseguradora (últimas 24 h)**
+```kusto
+traces
+| where timestamp > ago(24h)
+| where message contains "QuotationInsurerResult"
+| extend Insurer = tostring(customDimensions.InsurerCode),
+         Outcome = tostring(customDimensions.Status)
+| where isnotempty(Insurer)
+| summarize Total = count(),
+            Succeeded = countif(Outcome == "Succeeded"),
+            Failed = countif(Outcome in ("Failed", "Timeout", "InsurerDown"))
+            by Insurer
+| extend SuccessRate = round(100.0 * Succeeded / Total, 2)
+| order by SuccessRate desc
+```
+
+**Latencia P50/P95 por aseguradora**
+```kusto
+traces
+| where timestamp > ago(24h)
+| extend Insurer = tostring(customDimensions.InsurerCode),
+         LatencyMs = tolong(customDimensions.LatencyMs)
+| where isnotempty(Insurer) and LatencyMs > 0
+| summarize P50 = percentile(LatencyMs, 50),
+            P95 = percentile(LatencyMs, 95),
+            P99 = percentile(LatencyMs, 99),
+            Count = count()
+            by Insurer
+| order by P95 desc
+```
+
+**Top 10 errores por aseguradora**
+```kusto
+traces
+| where timestamp > ago(7d)
+| extend Insurer = tostring(customDimensions.InsurerCode),
+         ErrorCode = tostring(customDimensions.ErrorCode)
+| where isnotempty(ErrorCode)
+| summarize Count = count() by Insurer, ErrorCode
+| top 10 by Count desc
+```
+
+**Trace completo por CorrelationId**
+```kusto
+union traces, requests, exceptions
+| where customDimensions.CorrelationId == "<correlation-id-here>"
+| project timestamp, itemType, message, severityLevel, customDimensions
+| order by timestamp asc
+```
+
+**Cotizaciones por agente (semana)**
+```kusto
+traces
+| where timestamp > ago(7d)
+| where message contains "Quotation.Request"
+| extend Agent = tostring(customDimensions.AgentId)
+| summarize Quotations = count() by Agent
+| top 20 by Quotations desc
+```
+
+**Emisiones exitosas vs fallidas**
+```kusto
+traces
+| where timestamp > ago(30d)
+| where message in ("Emission.Issued", "Emission.Failed")
+| summarize Count = count() by Action = tostring(customDimensions.action), bin(timestamp, 1d)
+| render timechart
+```
+
+### 7.2 Alertas recomendadas
+
+| Alerta | Condición | Severidad |
+|---|---|---|
+| Aseguradora abajo del 80% éxito | SuccessRate < 80% en ventana 1 h | Warning |
+| Aseguradora abajo del 50% éxito | SuccessRate < 50% en ventana 30 min | Error |
+| Circuit breaker abierto | `traces` con `IsCircuitOpen == true` | Warning |
+| Latencia P95 > 30s | P95 sostenido por 15 min | Warning |
+| Health/ready en rojo | Availability test failing | Error |
+
 ---
 
 ## 8. Red — Whitelist de IP en aseguradoras

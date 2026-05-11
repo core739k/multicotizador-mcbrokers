@@ -1,8 +1,12 @@
 using McBrokers.Infrastructure;
-using Microsoft.AspNetCore.Authorization;
+using McBrokers.Infrastructure.Observability;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Host.UseMcBrokersSerilog();
+
+builder.Services.AddMcBrokersTelemetry(builder.Configuration);
 builder.Services.AddMcBrokersInfrastructure(builder.Configuration);
 
 builder.Services.AddRazorPages(options =>
@@ -19,6 +23,8 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseMcBrokersCorrelationId();
+app.UseSerilogRequestLogging();
 
 app.UseRouting();
 
