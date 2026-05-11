@@ -56,6 +56,7 @@ public static class DependencyInjection
         // Cola y worker
         services.AddSingleton<IQuotationQueue, InMemoryQuotationQueue>();
         services.AddHostedService<QuotationWorker>();
+        services.AddHostedService<Startup.KnownInsurerErrorsSeed>();
 
         // Adapters de aseguradora (F3: solo GNP). Los demás se registran cuando se implementen en F4.
         services.AddHttpClient<GnpQuoteAdapter>();
@@ -75,6 +76,7 @@ public static class DependencyInjection
         services.AddScoped<CreateInsurer>();
         services.AddScoped<UpdateInsurer>();
         services.AddScoped<UpsertInsurerConfig>();
+        services.AddScoped<UpsertInsurerPackageMapping>();
         services.AddScoped<ListInsurers>();
         services.AddScoped<GetInsurer>();
         services.AddScoped<ListAgents>();

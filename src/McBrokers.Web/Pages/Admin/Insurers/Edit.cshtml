@@ -1,5 +1,6 @@
 @page "{id:guid}"
 @model McBrokers.Web.Pages.Admin.Insurers.EditModel
+@using McBrokers.Domain.Quotations
 @{
     ViewData["Title"] = $"Aseguradora: {Model.Detail.Insurer.Name}";
 }
@@ -52,6 +53,32 @@
     </div>
 
     <div class="col-md-6">
+        <h4>Códigos de paquete (CVE_PAQUETE)</h4>
+        <p class="text-muted small">
+            Mapeo del paquete interno al código que espera la aseguradora.
+            Necesario para que las cotizaciones se envíen con éxito.
+        </p>
+        @foreach (var pkg in Enum.GetValues<PackageCode>())
+        {
+            var existing = Model.Detail.PackageMappings.FirstOrDefault(m => m.InternalPackage == pkg);
+            <form method="post" asp-page-handler="Package" class="d-flex gap-2 mb-2">
+                <input type="hidden" name="PackageInput.InsurerId" value="@Model.Detail.Insurer.Id" />
+                <input type="hidden" name="PackageInput.InternalPackage" value="@pkg" />
+                <div class="form-floating flex-shrink-0" style="width: 110px;">
+                    <input class="form-control form-control-sm" disabled value="@pkg" />
+                    <label class="small">Paquete</label>
+                </div>
+                <div class="form-floating flex-grow-1">
+                    <input class="form-control form-control-sm" name="PackageInput.ExternalCode"
+                           value="@existing?.ExternalCode" placeholder="CVE_PAQUETE" />
+                    <label class="small">Código externo</label>
+                </div>
+                <button type="submit" class="btn btn-sm btn-outline-primary">Guardar</button>
+            </form>
+        }
+
+        <hr class="my-4" />
+
         <h4>Configuración por entorno</h4>
         @foreach (var env in Model.AllEnvironments)
         {

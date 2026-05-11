@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using McBrokers.Application.Admin;
 using McBrokers.Domain.Insurers;
+using McBrokers.Domain.Quotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -11,12 +12,18 @@ public class EditModel : PageModel
     private readonly GetInsurer _getInsurer;
     private readonly UpdateInsurer _updateInsurer;
     private readonly UpsertInsurerConfig _upsertConfig;
+    private readonly UpsertInsurerPackageMapping _upsertPackage;
 
-    public EditModel(GetInsurer getInsurer, UpdateInsurer updateInsurer, UpsertInsurerConfig upsertConfig)
+    public EditModel(
+        GetInsurer getInsurer,
+        UpdateInsurer updateInsurer,
+        UpsertInsurerConfig upsertConfig,
+        UpsertInsurerPackageMapping upsertPackage)
     {
         _getInsurer = getInsurer;
         _updateInsurer = updateInsurer;
         _upsertConfig = upsertConfig;
+        _upsertPackage = upsertPackage;
     }
 
     [BindProperty]
@@ -24,6 +31,9 @@ public class EditModel : PageModel
 
     [BindProperty]
     public ConfigInputModel ConfigInput { get; set; } = new();
+
+    [BindProperty]
+    public PackageInputModel PackageInput { get; set; } = new();
 
     public InsurerDetailView Detail { get; private set; } = null!;
     public string? ErrorMessage { get; private set; }
@@ -129,5 +139,33 @@ public class EditModel : PageModel
         public string KeyVaultSecretName { get; set; } = string.Empty;
         public int TimeoutSeconds { get; set; } = 30;
         public int MaxRetries { get; set; } = 3;
+    }
+
+    public class PackageInputModel
+    {
+        public Guid InsurerId { get; set; }
+        public PackageCode InternalPackage { get; set; }
+        public string ExternalCode { get; set; } = string.Empty;
+        public string? Description { get; set; }
+    }
+
+    public async Task<IActionResult> OnPostPackageAsync(CancellationToken cancellationToken)
+    {
+        var result = await _upsertPackage.ExecuteAsync(
+            new UpsertInsurerPackageMappingCommand(
+                PackageInput.InsurerId,
+                PackageInput.InternalPackage,
+                PackageInput.ExternalCode,
+                PackageInput.Description),
+            cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            ErrorMessage = result.Error;
+            return await Reload(PackageInput.InsurerId, cancellationToken);
+        }
+
+        SuccessMessage = $"Código de paquete {PackageInput.InternalPackage} guardado.";
+        return await Reload(PackageInput.InsurerId, cancellationToken);
     }
 }

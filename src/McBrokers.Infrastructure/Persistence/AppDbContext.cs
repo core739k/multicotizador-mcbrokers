@@ -26,6 +26,7 @@ public class AppDbContext : DbContext
     public DbSet<Quotation> Quotations => Set<Quotation>();
     public DbSet<QuotationInsurerResult> QuotationInsurerResults => Set<QuotationInsurerResult>();
     public DbSet<KnownInsurerError> KnownInsurerErrors => Set<KnownInsurerError>();
+    public DbSet<InsurerPackageMapping> InsurerPackageMappings => Set<InsurerPackageMapping>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

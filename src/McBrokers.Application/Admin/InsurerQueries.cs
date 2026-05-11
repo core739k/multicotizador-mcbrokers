@@ -1,5 +1,6 @@
 using McBrokers.Application.Ports;
 using McBrokers.Domain.Insurers;
+using McBrokers.Domain.Quotations;
 
 namespace McBrokers.Application.Admin;
 
@@ -36,11 +37,16 @@ public sealed class GetInsurer
 {
     private readonly IInsurerRepository _insurers;
     private readonly IInsurerConfigRepository _configs;
+    private readonly IInsurerPackageMappingRepository _packageMappings;
 
-    public GetInsurer(IInsurerRepository insurers, IInsurerConfigRepository configs)
+    public GetInsurer(
+        IInsurerRepository insurers,
+        IInsurerConfigRepository configs,
+        IInsurerPackageMappingRepository packageMappings)
     {
         _insurers = insurers;
         _configs = configs;
+        _packageMappings = packageMappings;
     }
 
     public async Task<InsurerDetailView?> ExecuteAsync(Guid id, CancellationToken cancellationToken)
@@ -49,7 +55,8 @@ public sealed class GetInsurer
         if (insurer is null) return null;
 
         var configs = await _configs.ListByInsurerAsync(id, cancellationToken).ConfigureAwait(false);
-        return InsurerDetailView.From(insurer, configs);
+        var packageMappings = await _packageMappings.ListByInsurerAsync(id, cancellationToken).ConfigureAwait(false);
+        return InsurerDetailView.From(insurer, configs, packageMappings);
     }
 }
 
@@ -68,8 +75,26 @@ public sealed record InsurerConfigView(
         cfg.AgentCode, cfg.KeyVaultSecretName, cfg.TimeoutSeconds, cfg.MaxRetries);
 }
 
-public sealed record InsurerDetailView(InsurerView Insurer, IReadOnlyList<InsurerConfigView> Configs)
+public sealed record InsurerPackageMappingView(
+    Guid Id,
+    PackageCode InternalPackage,
+    string ExternalCode,
+    string? Description)
 {
-    public static InsurerDetailView From(Insurer insurer, IReadOnlyList<InsurerConfig> configs) =>
-        new(InsurerView.From(insurer), configs.Select(InsurerConfigView.From).ToList());
+    public static InsurerPackageMappingView From(InsurerPackageMapping m) =>
+        new(m.Id, m.InternalPackage, m.ExternalCode, m.Description);
+}
+
+public sealed record InsurerDetailView(
+    InsurerView Insurer,
+    IReadOnlyList<InsurerConfigView> Configs,
+    IReadOnlyList<InsurerPackageMappingView> PackageMappings)
+{
+    public static InsurerDetailView From(
+        Insurer insurer,
+        IReadOnlyList<InsurerConfig> configs,
+        IReadOnlyList<InsurerPackageMapping> packageMappings) =>
+        new(InsurerView.From(insurer),
+            configs.Select(InsurerConfigView.From).ToList(),
+            packageMappings.Select(InsurerPackageMappingView.From).ToList());
 }
