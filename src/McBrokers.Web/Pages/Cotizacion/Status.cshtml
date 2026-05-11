@@ -46,9 +46,12 @@ else
                                     <tr><td>IVA</td><td class="text-end">$@r.Tax?.ToString("N2")</td></tr>
                                     <tr><td>Derechos</td><td class="text-end">$@r.Fees?.ToString("N2")</td></tr>
                                 </table>
-                                <small class="text-muted d-block mt-2">
+                                <small class="text-muted d-block mt-2 mb-2">
                                     Ref: <code>@r.ExternalQuoteRef</code> · @r.LatencyMs ms
                                 </small>
+                                <a class="btn btn-sm btn-success" asp-page="/Emision/Index" asp-route-resultId="@r.Id">
+                                    Emitir póliza
+                                </a>
                             }
                             else
                             {

@@ -44,4 +44,31 @@ public sealed class LocalDiskBlobStore : IBlobStore
         _logger.LogDebug("Wrote local blob {Reference} ({Size} chars)", reference, content.Length);
         return reference;
     }
+
+    public async Task<string> WriteBinaryAsync(
+        string container, string blobName, byte[] content,
+        IReadOnlyDictionary<string, string>? metadata, CancellationToken cancellationToken)
+    {
+        var fullPath = Path.Combine(_rootPath, container, blobName);
+        var directory = Path.GetDirectoryName(fullPath);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        await File.WriteAllBytesAsync(fullPath, content, cancellationToken).ConfigureAwait(false);
+
+        if (metadata is { Count: > 0 })
+        {
+            var metaPath = fullPath + ".meta";
+            await File.WriteAllLinesAsync(
+                metaPath,
+                metadata.Select(kv => $"{kv.Key}={kv.Value}"),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        var reference = $"file://{fullPath.Replace('\\', '/')}";
+        _logger.LogDebug("Wrote local binary blob {Reference} ({Size} bytes)", reference, content.Length);
+        return reference;
+    }
 }

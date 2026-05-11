@@ -1,0 +1,108 @@
+@page "{resultId:guid}"
+@model McBrokers.Web.Pages.Emision.IndexModel
+@{
+    ViewData["Title"] = "Emitir póliza";
+}
+
+<h2>Emitir póliza</h2>
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">@Model.ErrorMessage</div>
+}
+
+@if (Model.IssuedPolicyNumber is not null)
+{
+    <div class="alert alert-success">
+        Póliza emitida: <strong>@Model.IssuedPolicyNumber</strong>
+        @if (!string.IsNullOrWhiteSpace(Model.PdfBlobRef))
+        {
+            <br /><small>PDF: <code>@Model.PdfBlobRef</code></small>
+        }
+    </div>
+}
+else
+{
+    <form method="post">
+        <input type="hidden" asp-for="Input.QuotationInsurerResultId" />
+
+        <h4>Cliente</h4>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="Input.FirstName" class="form-label">Nombre</label>
+                <input asp-for="Input.FirstName" class="form-control" required />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.LastNamePaternal" class="form-label">Apellido paterno</label>
+                <input asp-for="Input.LastNamePaternal" class="form-control" required />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.LastNameMaternal" class="form-label">Apellido materno</label>
+                <input asp-for="Input.LastNameMaternal" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.Rfc" class="form-label">RFC</label>
+                <input asp-for="Input.Rfc" class="form-control" maxlength="13" required />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.Phone" class="form-label">Teléfono (10 dígitos)</label>
+                <input asp-for="Input.Phone" class="form-control" pattern="\d{10}" required />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.Email" class="form-label">Email</label>
+                <input asp-for="Input.Email" type="email" class="form-control" required />
+            </div>
+        </div>
+
+        <h4 class="mt-4">Domicilio</h4>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="Input.Street" class="form-label">Calle</label>
+                <input asp-for="Input.Street" class="form-control" required />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="Input.ExteriorNumber" class="form-label">N° Ext.</label>
+                <input asp-for="Input.ExteriorNumber" class="form-control" required />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="Input.InteriorNumber" class="form-label">N° Int.</label>
+                <input asp-for="Input.InteriorNumber" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.Neighborhood" class="form-label">Colonia</label>
+                <input asp-for="Input.Neighborhood" class="form-control" required />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.City" class="form-label">Ciudad/Municipio</label>
+                <input asp-for="Input.City" class="form-control" required />
+            </div>
+            <div class="col-md-2">
+                <label asp-for="Input.StateCode" class="form-label">Edo. (2 díg)</label>
+                <input asp-for="Input.StateCode" class="form-control" maxlength="2" required />
+            </div>
+            <div class="col-md-2">
+                <label asp-for="Input.PostalCode" class="form-label">CP</label>
+                <input asp-for="Input.PostalCode" class="form-control" pattern="\d{5}" required />
+            </div>
+        </div>
+
+        <h4 class="mt-4">Vehículo</h4>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="Input.Plate" class="form-label">Placas</label>
+                <input asp-for="Input.Plate" class="form-control" required />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.EngineNumber" class="form-label">N° Motor</label>
+                <input asp-for="Input.EngineNumber" class="form-control" required />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.SerialNumber" class="form-label">N° Serie</label>
+                <input asp-for="Input.SerialNumber" class="form-control" required />
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-success mt-4">Emitir póliza</button>
+        <a class="btn btn-link" asp-page="/Index">Cancelar</a>
+    </form>
+}

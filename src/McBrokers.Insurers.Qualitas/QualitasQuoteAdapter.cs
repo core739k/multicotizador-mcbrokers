@@ -25,6 +25,13 @@ public sealed class QualitasQuoteAdapter : IInsurerAdapter
 
     public InsurerCode Code => InsurerCode.Qua;
 
+    public Task<InsurerEmitOutcome> EmitAsync(InsurerEmitRequest request, CancellationToken cancellationToken) =>
+        Task.FromResult<InsurerEmitOutcome>(new InsurerEmitOutcome.Failure(new InsurerEmitError(
+            Domain.Quotations.ErrorCategory.Technical,
+            "NOT_IMPLEMENTED",
+            "Emisión Quálitas pendiente de implementar (TipoMovimiento=3 con datos completos del titular).",
+            LatencyMs: 0, RawRequest: null, RawResponse: null)));
+
     public async Task<InsurerQuoteOutcome> QuoteAsync(InsurerQuoteRequest request, CancellationToken cancellationToken)
     {
         var today = DateOnly.FromDateTime(_time.GetUtcNow().UtcDateTime);

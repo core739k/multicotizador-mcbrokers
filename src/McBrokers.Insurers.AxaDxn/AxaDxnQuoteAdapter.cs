@@ -24,6 +24,13 @@ public sealed class AxaDxnQuoteAdapter : IInsurerAdapter
 
     public InsurerCode Code => InsurerCode.AxaDxn;
 
+    public Task<InsurerEmitOutcome> EmitAsync(InsurerEmitRequest request, CancellationToken cancellationToken) =>
+        Task.FromResult<InsurerEmitOutcome>(new InsurerEmitOutcome.Failure(new InsurerEmitError(
+            Domain.Quotations.ErrorCategory.Technical,
+            "NOT_IMPLEMENTED",
+            "Emisión AXA DXN va por COPSIS (lb1.copsis.com) con JSON; impl pendiente F5.5 con credenciales reales.",
+            LatencyMs: 0, RawRequest: null, RawResponse: null)));
+
     public async Task<InsurerQuoteOutcome> QuoteAsync(InsurerQuoteRequest request, CancellationToken cancellationToken)
     {
         var today = DateOnly.FromDateTime(_time.GetUtcNow().UtcDateTime);

@@ -24,6 +24,13 @@ public sealed class AxaColQuoteAdapter : IInsurerAdapter
 
     public InsurerCode Code => InsurerCode.AxaCol;
 
+    public Task<InsurerEmitOutcome> EmitAsync(InsurerEmitRequest request, CancellationToken cancellationToken) =>
+        Task.FromResult<InsurerEmitOutcome>(new InsurerEmitOutcome.Failure(new InsurerEmitError(
+            Domain.Quotations.ErrorCategory.Technical,
+            "NOT_IMPLEMENTED",
+            "Emisión AXA COL pendiente (createSolicitudPolizasInmediata con TipoMovimiento=EMISION).",
+            LatencyMs: 0, RawRequest: null, RawResponse: null)));
+
     public async Task<InsurerQuoteOutcome> QuoteAsync(InsurerQuoteRequest request, CancellationToken cancellationToken)
     {
         var today = DateOnly.FromDateTime(_time.GetUtcNow().UtcDateTime);

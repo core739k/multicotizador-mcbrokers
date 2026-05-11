@@ -46,6 +46,7 @@ app.MapAdminInsurers();
 app.MapAdminAgents();
 app.MapCatalog();
 app.MapQuotations();
+app.MapEmissions();
 
 app.Run();
 

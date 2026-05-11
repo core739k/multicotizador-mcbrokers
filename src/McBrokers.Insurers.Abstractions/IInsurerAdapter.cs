@@ -9,4 +9,8 @@ public interface IInsurerAdapter
     Task<InsurerQuoteOutcome> QuoteAsync(
         InsurerQuoteRequest request,
         CancellationToken cancellationToken);
+
+    Task<InsurerEmitOutcome> EmitAsync(
+        InsurerEmitRequest request,
+        CancellationToken cancellationToken);
 }

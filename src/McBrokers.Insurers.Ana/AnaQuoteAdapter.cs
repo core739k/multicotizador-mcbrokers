@@ -15,22 +15,36 @@ public sealed class AnaQuoteAdapter : IInsurerAdapter
     private readonly HttpClient _http;
     private readonly ILogger<AnaQuoteAdapter> _logger;
     private readonly TimeProvider _time;
+    private readonly IAnaPostalCodeResolver _postalResolver;
 
-    public AnaQuoteAdapter(HttpClient http, ILogger<AnaQuoteAdapter> logger, TimeProvider time)
+    public AnaQuoteAdapter(
+        HttpClient http,
+        ILogger<AnaQuoteAdapter> logger,
+        TimeProvider time,
+        IAnaPostalCodeResolver postalResolver)
     {
         _http = http;
         _logger = logger;
         _time = time;
+        _postalResolver = postalResolver;
     }
 
     public InsurerCode Code => InsurerCode.Ana;
 
+    public Task<InsurerEmitOutcome> EmitAsync(InsurerEmitRequest request, CancellationToken cancellationToken) =>
+        Task.FromResult<InsurerEmitOutcome>(new InsurerEmitOutcome.Failure(new InsurerEmitError(
+            Domain.Quotations.ErrorCategory.Technical,
+            "NOT_IMPLEMENTED",
+            "Emisión ANA pendiente (TransaccionAsync con tipotransaccion=E).",
+            LatencyMs: 0, RawRequest: null, RawResponse: null)));
+
     public async Task<InsurerQuoteOutcome> QuoteAsync(InsurerQuoteRequest request, CancellationToken cancellationToken)
     {
-        // ANA requiere EdoMun (5 dígitos = estado 2 + municipio 3); aquí se infiere del CP "9 002" → "09002".
-        // En F4 entregable es estructura; el CP→edoMun real se resuelve en F4.5 cuando se conecte a ColoniaxCP.
-        // Para fallback estructural usamos los primeros 5 dígitos del CP como placeholder.
-        var edoMun = (request.PostalCode ?? string.Empty).PadLeft(5, '0');
+        // Resuelve EdoMun real desde ANA ColoniaxCP (con cache 24h). Si el servicio falla, fallback al CP.
+        var postal = await _postalResolver
+            .ResolveAsync(request.PostalCode, request.Credentials, request.EnvironmentConfig.EndpointUrl, cancellationToken)
+            .ConfigureAwait(false);
+        var edoMun = postal.EdoMun;
 
         var inner = AnaRequestBuilder.BuildTransaccionesXml(request, edoMun);
         var soapXml = AnaRequestBuilder.BuildSoapEnvelope(request, inner);

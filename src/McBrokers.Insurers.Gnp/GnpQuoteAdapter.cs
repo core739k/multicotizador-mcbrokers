@@ -24,6 +24,9 @@ public sealed class GnpQuoteAdapter : IInsurerAdapter
 
     public InsurerCode Code => InsurerCode.Gnp;
 
+    public Task<InsurerEmitOutcome> EmitAsync(InsurerEmitRequest request, CancellationToken cancellationToken) =>
+        Mapping.GnpEmissionExecutor.ExecuteAsync(_http, _logger, _time, request, cancellationToken);
+
     public async Task<InsurerQuoteOutcome> QuoteAsync(
         InsurerQuoteRequest request, CancellationToken cancellationToken)
     {

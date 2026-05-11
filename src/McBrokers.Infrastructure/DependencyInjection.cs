@@ -51,6 +51,12 @@ public static class DependencyInjection
         services.AddScoped<IQuotationRepository, QuotationRepository>();
         services.AddScoped<IInsurerPackageMappingRepository, InsurerPackageMappingRepository>();
         services.AddScoped<IInsurerCredentialProvider, KeyVaultCredentialProvider>();
+        services.AddScoped<IEmissionRepository, EmissionRepository>();
+
+        // Email + PDF download (dev impls). Producción: Microsoft Graph/SendGrid + HttpClient resiliente.
+        services.AddScoped<IEmailSender, Email.LogEmailSender>();
+        services.AddHttpClient<Pdf.HttpPdfDownloader>();
+        services.AddScoped<IPdfDownloader, Pdf.HttpPdfDownloader>();
 
         // Blob (LocalDisk en dev; en prod el path llega de configuración o se sustituye por AzureBlobStore).
         var blobRoot = configuration["Blob:LocalRoot"] ?? Path.Combine(Path.GetTempPath(), "mcbrokers-blobs");
@@ -60,12 +66,18 @@ public static class DependencyInjection
         // Cola y worker
         services.AddSingleton<IQuotationQueue, InMemoryQuotationQueue>();
         services.AddHostedService<QuotationWorker>();
+        // Orden importante: InsurersSeed antes que KnownInsurerErrorsSeed (este último depende
+        // de que existan las aseguradoras para enlazar errores por InsurerId).
+        services.AddHostedService<Startup.InsurersSeed>();
         services.AddHostedService<Startup.KnownInsurerErrorsSeed>();
 
         // Adapters de aseguradora. Cada uno con su HttpClient nombrado para timeouts/handlers propios.
         services.AddHttpClient<GnpQuoteAdapter>();
         services.AddHttpClient<QualitasQuoteAdapter>();
         services.AddHttpClient<AnaQuoteAdapter>();
+        services.AddHttpClient<AnaPostalCodeResolver>();
+        services.AddMemoryCache();
+        services.AddScoped<IAnaPostalCodeResolver, AnaPostalCodeResolver>();
         services.AddHttpClient<AxaColQuoteAdapter>();
         services.AddHttpClient<AxaDxnQuoteAdapter>();
         services.AddScoped<IInsurerAdapter, GnpQuoteAdapter>();
@@ -101,6 +113,7 @@ public static class DependencyInjection
         services.AddScoped<RequestQuotation>();
         services.AddScoped<GetQuotationStatus>();
         services.AddScoped<ProcessQuotation>();
+        services.AddScoped<McBrokers.Application.Emissions.EmitPolicy>();
 
         services.AddMcBrokersGoogleAuthentication(configuration);
         services.AddAuthorization(options =>

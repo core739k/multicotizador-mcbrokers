@@ -62,6 +62,17 @@ public sealed class AdminApiFactory : WebApplicationFactory<Program>
 
             // Make the test agent id and role discoverable from the auth handler.
             services.AddSingleton<TestAgentContext>(_ => new TestAgentContext(TestAgentId, () => TestAgentRole));
+
+            // Quitar los HostedServices de seed para que los tests E2E partan de BD limpia.
+            // Cuando un test específico requiera seed, lo inyecta manualmente vía AppDbContext.
+            var hostedToRemove = services
+                .Where(d => d.ServiceType == typeof(Microsoft.Extensions.Hosting.IHostedService)
+                            && d.ImplementationType is not null
+                            && (d.ImplementationType.Name == "InsurersSeed"
+                                || d.ImplementationType.Name == "KnownInsurerErrorsSeed"
+                                || d.ImplementationType.Name == "QuotationWorker"))
+                .ToList();
+            foreach (var d in hostedToRemove) services.Remove(d);
         });
     }
 }

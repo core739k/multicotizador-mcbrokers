@@ -1,6 +1,7 @@
 using McBrokers.Domain.Agents;
 using McBrokers.Domain.Audit;
 using McBrokers.Domain.Catalog;
+using McBrokers.Domain.Emissions;
 using McBrokers.Domain.Insurers;
 using McBrokers.Domain.Quotations;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,8 @@ public class AppDbContext : DbContext
     public DbSet<QuotationInsurerResult> QuotationInsurerResults => Set<QuotationInsurerResult>();
     public DbSet<KnownInsurerError> KnownInsurerErrors => Set<KnownInsurerError>();
     public DbSet<InsurerPackageMapping> InsurerPackageMappings => Set<InsurerPackageMapping>();
+    public DbSet<Emission> Emissions => Set<Emission>();
+    public DbSet<EmissionAttempt> EmissionAttempts => Set<EmissionAttempt>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
