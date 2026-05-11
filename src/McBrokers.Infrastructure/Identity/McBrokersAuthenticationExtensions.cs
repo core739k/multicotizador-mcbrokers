@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using McBrokers.Domain.Agents;
+using McBrokers.Application.Auth;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Http;
@@ -48,23 +48,28 @@ public static class McBrokersAuthenticationExtensions
                 options.Scope.Add("profile");
                 options.SaveTokens = false;
 
-                // Sugerencia a Google: pre-filtrar al dominio. NO confiable por sí solo.
                 options.AdditionalAuthorizationParameters["hd"] = AllowedHostedDomain;
 
-                // Defensa en profundidad: validar el claim email del proveedor
-                // antes de emitir el ticket. Bloquea cualquier identidad fuera del dominio.
-                options.Events.OnCreatingTicket = context =>
+                options.Events.OnCreatingTicket = async context =>
                 {
-                    var email = context.Identity?.FindFirst(ClaimTypes.Email)?.Value;
-                    var emailResult = AgentEmail.Create(email ?? string.Empty);
+                    var email = context.Identity?.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty;
+                    var fullName = context.Identity?.FindFirst(ClaimTypes.Name)?.Value ?? email;
 
-                    if (!emailResult.IsSuccess)
+                    var resolve = context.HttpContext.RequestServices.GetRequiredService<ResolveAgentFromGoogleToken>();
+                    var result = await resolve.ResolveAsync(
+                        new GoogleIdentity(email, fullName),
+                        context.HttpContext.RequestAborted).ConfigureAwait(false);
+
+                    if (!result.IsSuccess)
                     {
-                        context.Fail(new UnauthorizedAccessException(
-                            $"Sign-in rejected: {emailResult.Error}"));
+                        context.Fail(new UnauthorizedAccessException($"Sign-in rejected: {result.Error}"));
+                        return;
                     }
 
-                    return Task.CompletedTask;
+                    var agent = result.Value;
+                    context.Identity!.AddClaim(new Claim(HttpContextCurrentAgentProvider.AgentIdClaim, agent.Id.ToString()));
+                    context.Identity.AddClaim(new Claim(ClaimTypes.Role, agent.Role.ToString()));
+                    context.Identity.AddClaim(new Claim("mcb:full-name", agent.FullName));
                 };
             });
 

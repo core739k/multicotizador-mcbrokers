@@ -1,0 +1,28 @@
+@page
+@model McBrokers.Web.Pages.Admin.IndexModel
+@{
+    ViewData["Title"] = "Panel admin";
+}
+
+<h2>Panel administrativo</h2>
+
+<div class="row mt-4">
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Aseguradoras</h5>
+                <p class="card-text">Alta, edición y configuración (endpoints, business number, agente externo) por entorno.</p>
+                <a class="btn btn-primary" asp-page="./Insurers/Index">Ir</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Agentes</h5>
+                <p class="card-text">Asignar rol y activar/desactivar agentes provisionados por OAuth.</p>
+                <a class="btn btn-primary" asp-page="./Agents/Index">Ir</a>
+            </div>
+        </div>
+    </div>
+</div>

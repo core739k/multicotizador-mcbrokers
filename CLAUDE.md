@@ -127,6 +127,14 @@ dotnet format McBrokers.Multicotizador.slnx
 
 ---
 
+## Decisiones arquitectónicas no obvias
+
+- **Admin Razor Pages usan Application Layer directamente.** REQUIREMENTS.md §3.2 dice que Razor consume la Api por HTTP, pero la razón es que móvil comparta el contrato — y móvil **no expone admin** (§7.3). Aplicar el indirección API → Application para admin es plumbing sin beneficio. Las páginas `/Admin/*` resuelven `CreateInsurer`, `ListAgents`, etc. vía DI. Para cotización/emisión (F3+), donde móvil sí participa, Razor llamará a Api por HttpClient.
+- **Api también expone `/api/v1/admin/*`** con la misma policy `RequireAdmin`. Si en el futuro se necesita exponer admin a otro cliente, ya está. La Web no lo consume.
+- **Worker de cotización asíncrona vive dentro de `McBrokers.Api`** como `IHostedService` por ahora — se extrae a proyecto separado solo cuando la escala lo justifique.
+
+---
+
 ## Restricciones / decisiones
 
 - **Sin secretos en repo.** Todo a Key Vault. `appsettings.*.Development.json` queda gitignored si trae cualquier secreto.

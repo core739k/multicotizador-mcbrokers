@@ -1,0 +1,35 @@
+@page
+@model McBrokers.Web.Pages.Admin.Insurers.CreateModel
+@{
+    ViewData["Title"] = "Nueva aseguradora";
+}
+
+<h2>Nueva aseguradora</h2>
+
+<form method="post" class="mt-3">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger">@Model.ErrorMessage</div>
+    }
+
+    <div class="mb-3">
+        <label asp-for="Input.Code" class="form-label">Código</label>
+        <select class="form-select" asp-for="Input.Code" asp-items="Model.CodeOptions"></select>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Input.Name" class="form-label">Nombre</label>
+        <input class="form-control" asp-for="Input.Name" />
+        <span asp-validation-for="Input.Name" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Input.DisplayOrder" class="form-label">Orden</label>
+        <input class="form-control" asp-for="Input.DisplayOrder" type="number" min="0" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Crear</button>
+    <a class="btn btn-link" asp-page="./Index">Cancelar</a>
+</form>

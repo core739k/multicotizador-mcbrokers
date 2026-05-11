@@ -14,6 +14,7 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.0" />
 
     <!-- Authentication (cookies auth ships built-in con ASP.NET Core 10) -->
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.0" />

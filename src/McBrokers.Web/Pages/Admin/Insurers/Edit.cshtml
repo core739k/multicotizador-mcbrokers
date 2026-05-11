@@ -1,0 +1,102 @@
+@page "{id:guid}"
+@model McBrokers.Web.Pages.Admin.Insurers.EditModel
+@{
+    ViewData["Title"] = $"Aseguradora: {Model.Detail.Insurer.Name}";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>@Model.Detail.Insurer.Name <small class="text-muted">(@Model.Detail.Insurer.Code)</small></h2>
+    <a class="btn btn-link" asp-page="./Index">Volver al listado</a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">@Model.ErrorMessage</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+{
+    <div class="alert alert-success">@Model.SuccessMessage</div>
+}
+
+<div class="row">
+    <div class="col-md-6">
+        <h4>Datos generales</h4>
+        <form method="post" asp-page-handler="General">
+            <input type="hidden" asp-for="Input.Id" />
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="mb-3">
+                <label asp-for="Input.Name" class="form-label">Nombre</label>
+                <input class="form-control" asp-for="Input.Name" />
+                <span asp-validation-for="Input.Name" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Input.DisplayOrder" class="form-label">Orden</label>
+                <input class="form-control" asp-for="Input.DisplayOrder" type="number" min="0" />
+            </div>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" asp-for="Input.IsEnabled" />
+                <label asp-for="Input.IsEnabled" class="form-check-label">Activa</label>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Input.LogoUrl" class="form-label">Logo URL (https)</label>
+                <input class="form-control" asp-for="Input.LogoUrl" placeholder="https://..." />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Guardar</button>
+        </form>
+    </div>
+
+    <div class="col-md-6">
+        <h4>Configuración por entorno</h4>
+        @foreach (var env in Model.AllEnvironments)
+        {
+            var cfg = Model.Detail.Configs.FirstOrDefault(c => c.Environment == env);
+            <div class="card mb-3">
+                <div class="card-header">@env</div>
+                <div class="card-body">
+                    <form method="post" asp-page-handler="Config">
+                        <input type="hidden" name="ConfigInput.InsurerId" value="@Model.Detail.Insurer.Id" />
+                        <input type="hidden" name="ConfigInput.Environment" value="@env" />
+
+                        <div class="mb-2">
+                            <label class="form-label small">Endpoint URL (https)</label>
+                            <input class="form-control form-control-sm" name="ConfigInput.EndpointUrl" value="@cfg?.EndpointUrl" required />
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col">
+                                <label class="form-label small">Business Number</label>
+                                <input class="form-control form-control-sm" name="ConfigInput.BusinessNumber" value="@cfg?.BusinessNumber" required />
+                            </div>
+                            <div class="col">
+                                <label class="form-label small">Agent Code</label>
+                                <input class="form-control form-control-sm" name="ConfigInput.AgentCode" value="@cfg?.AgentCode" required />
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small">Key Vault secret name</label>
+                            <input class="form-control form-control-sm" name="ConfigInput.KeyVaultSecretName" value="@cfg?.KeyVaultSecretName" required />
+                            <div class="form-text">Los secretos en sí viven en Key Vault, aquí solo el nombre.</div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col">
+                                <label class="form-label small">Timeout (s)</label>
+                                <input type="number" min="1" max="600" class="form-control form-control-sm" name="ConfigInput.TimeoutSeconds" value="@(cfg?.TimeoutSeconds ?? 30)" required />
+                            </div>
+                            <div class="col">
+                                <label class="form-label small">Max retries</label>
+                                <input type="number" min="0" class="form-control form-control-sm" name="ConfigInput.MaxRetries" value="@(cfg?.MaxRetries ?? 3)" required />
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-sm btn-primary">Guardar</button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+</div>

@@ -1,10 +1,27 @@
-﻿@page
+@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Inicio";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="text-center pt-5">
+    <h1>Multicotizador MCBrokers</h1>
+    <p class="lead text-muted">Cotización y emisión multi-aseguradora.</p>
+
+    @if (User?.Identity?.IsAuthenticated == true)
+    {
+        <p>Sesión iniciada como <strong>@(User.FindFirst("mcb:full-name")?.Value ?? User.Identity?.Name)</strong>.</p>
+        @if (User.IsInRole("Admin"))
+        {
+            <a class="btn btn-primary mt-3" asp-page="/Admin/Index">Ir al panel admin</a>
+        }
+        else
+        {
+            <p class="text-muted">Tu rol actual es <code>@(User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Agent")</code>.</p>
+        }
+    }
+    else
+    {
+        <a class="btn btn-primary mt-3" asp-page="/Signin">Iniciar sesión</a>
+    }
 </div>
