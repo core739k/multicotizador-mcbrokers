@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap12:Envelope xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
+  <soap12:Body>
+    <obtenerNuevaEmisionResponse xmlns="http://qbcenter.qualitas.com.mx/wsCotQua/">
+      <obtenerNuevaEmisionResult>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;Movimientos&gt;
+  &lt;Movimiento NoNegocio="07738" TipoMovimiento="2"&gt;
+    &lt;CodigoError&gt;0288-- Uso invalido para esta categoria&lt;/CodigoError&gt;
+  &lt;/Movimiento&gt;
+&lt;/Movimientos&gt;</obtenerNuevaEmisionResult>
+    </obtenerNuevaEmisionResponse>
+  </soap12:Body>
+</soap12:Envelope>

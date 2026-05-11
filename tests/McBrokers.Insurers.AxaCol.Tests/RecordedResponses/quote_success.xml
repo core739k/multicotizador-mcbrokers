@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+  <soapenv:Body>
+    <createSolicitudPolizasInmediataResponse xmlns="http://wsfacade.emisionpolizas.autos.seguros.mx.ia3.ing.com">
+      <return>&lt;Respuesta&gt;
+  &lt;FolioCotizacion&gt;AXACOL-202605110042&lt;/FolioCotizacion&gt;
+  &lt;PrimaNeta&gt;7200.00&lt;/PrimaNeta&gt;
+  &lt;PrimaTotal&gt;8612.00&lt;/PrimaTotal&gt;
+  &lt;IVA&gt;1152.00&lt;/IVA&gt;
+  &lt;Derechos&gt;260.00&lt;/Derechos&gt;
+&lt;/Respuesta&gt;</return>
+    </createSolicitudPolizasInmediataResponse>
+  </soapenv:Body>
+</soapenv:Envelope>

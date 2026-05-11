@@ -22,19 +22,22 @@ public sealed class RequestQuotation
     private readonly IClock _clock;
     private readonly ICurrentAgentProvider _currentAgent;
     private readonly IAuditWriter _audit;
+    private readonly IInsurerRepository _insurers;
 
     public RequestQuotation(
         IQuotationRepository quotations,
         IQuotationQueue queue,
         IClock clock,
         ICurrentAgentProvider currentAgent,
-        IAuditWriter audit)
+        IAuditWriter audit,
+        IInsurerRepository insurers)
     {
         _quotations = quotations;
         _queue = queue;
         _clock = clock;
         _currentAgent = currentAgent;
         _audit = audit;
+        _insurers = insurers;
     }
 
     public async Task<Result<RequestQuotationResult>> ExecuteAsync(
@@ -61,8 +64,11 @@ public sealed class RequestQuotation
 
         var quotation = creation.Value;
 
-        // F3: only GNP enabled. Mark expected results = 1 so the worker can decide when complete.
-        quotation.ExpectResultsFrom(1);
+        // Cuenta cuántas aseguradoras habilitadas van a cotizar. El Status del Quotation
+        // recompone Pending → Partial → Completed/Failed según se vayan recibiendo resultados.
+        var enabledInsurers = (await _insurers.ListAsync(cancellationToken).ConfigureAwait(false))
+            .Count(i => i.IsEnabled);
+        quotation.ExpectResultsFrom(Math.Max(1, enabledInsurers));
 
         await _quotations.AddAsync(quotation, cancellationToken).ConfigureAwait(false);
 

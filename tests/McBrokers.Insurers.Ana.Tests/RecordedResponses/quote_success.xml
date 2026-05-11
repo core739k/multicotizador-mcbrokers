@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <TransaccionResponse xmlns="http://server.anaseguros.com.mx/WSCOR/">
+      <TransaccionResult>&lt;?xml version="1.0"?&gt;
+&lt;transacciones&gt;
+  &lt;transaccion version="1" tipotransaccion="C" cotizacion="ANA-202605110007" negocio="2213"&gt;
+    &lt;poliza id="" tipo="A" cotizacion="ANA-202605110007"
+            prima_neta="8500.00" iva="1360.00" derechos="300.00" prima_total="10160.00"/&gt;
+  &lt;/transaccion&gt;
+&lt;/transacciones&gt;</TransaccionResult>
+    </TransaccionResponse>
+  </soap:Body>
+</soap:Envelope>

@@ -12,7 +12,11 @@ using McBrokers.Infrastructure.Messaging;
 using McBrokers.Infrastructure.Persistence;
 using McBrokers.Infrastructure.Time;
 using McBrokers.Insurers.Abstractions;
+using McBrokers.Insurers.Ana;
+using McBrokers.Insurers.AxaCol;
+using McBrokers.Insurers.AxaDxn;
 using McBrokers.Insurers.Gnp;
+using McBrokers.Insurers.Qualitas;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -58,9 +62,17 @@ public static class DependencyInjection
         services.AddHostedService<QuotationWorker>();
         services.AddHostedService<Startup.KnownInsurerErrorsSeed>();
 
-        // Adapters de aseguradora (F3: solo GNP). Los demás se registran cuando se implementen en F4.
+        // Adapters de aseguradora. Cada uno con su HttpClient nombrado para timeouts/handlers propios.
         services.AddHttpClient<GnpQuoteAdapter>();
+        services.AddHttpClient<QualitasQuoteAdapter>();
+        services.AddHttpClient<AnaQuoteAdapter>();
+        services.AddHttpClient<AxaColQuoteAdapter>();
+        services.AddHttpClient<AxaDxnQuoteAdapter>();
         services.AddScoped<IInsurerAdapter, GnpQuoteAdapter>();
+        services.AddScoped<IInsurerAdapter, QualitasQuoteAdapter>();
+        services.AddScoped<IInsurerAdapter, AnaQuoteAdapter>();
+        services.AddScoped<IInsurerAdapter, AxaColQuoteAdapter>();
+        services.AddScoped<IInsurerAdapter, AxaDxnQuoteAdapter>();
         services.AddSingleton<TimeProvider>(TimeProvider.System);
 
         // Cross-cutting

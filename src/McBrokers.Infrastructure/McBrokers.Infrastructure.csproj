@@ -12,6 +12,10 @@
     <ProjectReference Include="..\McBrokers.SharedKernel\McBrokers.SharedKernel.csproj" />
     <ProjectReference Include="..\McBrokers.Insurers.Abstractions\McBrokers.Insurers.Abstractions.csproj" />
     <ProjectReference Include="..\McBrokers.Insurers.Gnp\McBrokers.Insurers.Gnp.csproj" />
+    <ProjectReference Include="..\McBrokers.Insurers.Qualitas\McBrokers.Insurers.Qualitas.csproj" />
+    <ProjectReference Include="..\McBrokers.Insurers.Ana\McBrokers.Insurers.Ana.csproj" />
+    <ProjectReference Include="..\McBrokers.Insurers.AxaCol\McBrokers.Insurers.AxaCol.csproj" />
+    <ProjectReference Include="..\McBrokers.Insurers.AxaDxn\McBrokers.Insurers.AxaDxn.csproj" />
   </ItemGroup>
 
   <ItemGroup>

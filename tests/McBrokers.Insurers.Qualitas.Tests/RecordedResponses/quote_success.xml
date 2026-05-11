@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap12:Envelope xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
+  <soap12:Body>
+    <obtenerNuevaEmisionResponse xmlns="http://qbcenter.qualitas.com.mx/wsCotQua/">
+      <obtenerNuevaEmisionResult>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;Movimientos&gt;
+  &lt;Movimiento NoNegocio="07738" NoCotizacion="QUA-202605110001" TipoMovimiento="2"&gt;
+    &lt;Primas&gt;
+      &lt;PrimaNeta&gt;9493.54&lt;/PrimaNeta&gt;
+      &lt;Derecho&gt;540.00&lt;/Derecho&gt;
+      &lt;Recargo&gt;0&lt;/Recargo&gt;
+      &lt;Impuesto&gt;1605.38&lt;/Impuesto&gt;
+      &lt;PrimaTotal&gt;11638.92&lt;/PrimaTotal&gt;
+      &lt;Comision&gt;0&lt;/Comision&gt;
+    &lt;/Primas&gt;
+    &lt;CodigoError&gt;0&lt;/CodigoError&gt;
+  &lt;/Movimiento&gt;
+&lt;/Movimientos&gt;</obtenerNuevaEmisionResult>
+    </obtenerNuevaEmisionResponse>
+  </soap12:Body>
+</soap12:Envelope>

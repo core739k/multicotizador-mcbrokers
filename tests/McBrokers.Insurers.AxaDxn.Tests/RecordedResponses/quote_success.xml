@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <CotizarIncisoResponse xmlns="http://axa.com.mx/autos/flotillas/ws">
+      <return>
+        <numeroCotizacion>AXADXN-202605110099</numeroCotizacion>
+        <primaNeta>9100.50</primaNeta>
+        <iva>1456.08</iva>
+        <derechos>340.00</derechos>
+        <primaTotal>10896.58</primaTotal>
+      </return>
+    </CotizarIncisoResponse>
+  </soap:Body>
+</soap:Envelope>
