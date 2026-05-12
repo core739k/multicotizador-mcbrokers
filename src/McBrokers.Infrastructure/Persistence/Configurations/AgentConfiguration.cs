@@ -35,11 +35,8 @@ public class AgentConfiguration : IEntityTypeConfiguration<Agent>
         builder.Property(a => a.IsActive)
             .IsRequired();
 
-        // Defensa en profundidad: el dominio @mcbrokers.com.mx ya se garantiza en AgentEmail.Create,
-        // pero el filtro deja la restricción visible en el esquema y en el plan de queries.
         builder.HasIndex(a => a.Email)
             .IsUnique()
-            .HasFilter("[Email] LIKE '%@mcbrokers.com.mx'")
             .HasDatabaseName("UX_Agents_Email");
     }
 }

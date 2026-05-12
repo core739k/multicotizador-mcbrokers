@@ -30,8 +30,7 @@ namespace McBrokers.Infrastructure.Persistence.Migrations
                 name: "UX_Agents_Email",
                 table: "Agents",
                 column: "Email",
-                unique: true,
-                filter: "[Email] LIKE '%@mcbrokers.com.mx'");
+                unique: true);
         }
 
         /// <inheritdoc />

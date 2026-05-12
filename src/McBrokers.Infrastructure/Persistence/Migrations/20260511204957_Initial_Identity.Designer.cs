@@ -52,8 +52,7 @@ namespace McBrokers.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique()
-                        .HasDatabaseName("UX_Agents_Email")
-                        .HasFilter("[Email] LIKE '%@mcbrokers.com.mx'");
+                        .HasDatabaseName("UX_Agents_Email");
 
                     b.ToTable("Agents", (string)null);
                 });
