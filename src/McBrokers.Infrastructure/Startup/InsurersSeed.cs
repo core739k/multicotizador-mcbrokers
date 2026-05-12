@@ -9,20 +9,21 @@ namespace McBrokers.Infrastructure.Startup;
 
 /// <summary>
 /// Idempotent seed: asegura que las 5 aseguradoras integradas existen en BD.
-/// IsEnabled queda en true por defecto (admin las desactiva si no las quiere visibles).
+/// AXA COL nace deshabilitada — MCBrokers solo opera AXA DXN. El resto nace habilitada
+/// (el admin puede activar/desactivar después).
 /// </summary>
 public sealed class InsurersSeed : IHostedService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<InsurersSeed> _logger;
 
-    private static readonly (InsurerCode Code, string Name, int DisplayOrder)[] DefaultInsurers =
+    private static readonly (InsurerCode Code, string Name, int DisplayOrder, bool IsEnabled)[] DefaultInsurers =
     {
-        (InsurerCode.Gnp, "Grupo Nacional Provincial (GNP)", 1),
-        (InsurerCode.Qua, "Quálitas", 2),
-        (InsurerCode.Ana, "ANA Seguros", 3),
-        (InsurerCode.AxaCol, "AXA Colectividad", 4),
-        (InsurerCode.AxaDxn, "AXA DXN", 5),
+        (InsurerCode.Gnp, "Grupo Nacional Provincial (GNP)", 1, true),
+        (InsurerCode.Qua, "Quálitas", 2, true),
+        (InsurerCode.Ana, "ANA Seguros", 3, true),
+        (InsurerCode.AxaCol, "AXA Colectividad", 4, false),
+        (InsurerCode.AxaDxn, "AXA DXN", 5, true),
     };
 
     public InsurersSeed(IServiceScopeFactory scopeFactory, ILogger<InsurersSeed> logger)
@@ -44,7 +45,7 @@ public sealed class InsurersSeed : IHostedService
                 return;
             }
 
-            foreach (var (code, name, order) in DefaultInsurers)
+            foreach (var (code, name, order, isEnabled) in DefaultInsurers)
             {
                 var exists = await db.Insurers.AnyAsync(i => i.Code == code, cancellationToken).ConfigureAwait(false);
                 if (exists) continue;
@@ -56,8 +57,13 @@ public sealed class InsurersSeed : IHostedService
                     continue;
                 }
 
+                if (!isEnabled)
+                {
+                    creation.Value.Disable();
+                }
+
                 await db.Insurers.AddAsync(creation.Value, cancellationToken).ConfigureAwait(false);
-                _logger.LogInformation("InsurersSeed: inserted {Code} ({Name})", code, name);
+                _logger.LogInformation("InsurersSeed: inserted {Code} ({Name}) IsEnabled={IsEnabled}", code, name, isEnabled);
             }
 
             await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

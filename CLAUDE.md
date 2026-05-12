@@ -144,6 +144,7 @@ dotnet format McBrokers.Multicotizador.slnx
 - **No Docker** por ahora. Deploy directo a Azure App Service.
 - **Auditoría inmutable** de cambios admin en `AuditLog`.
 - **CorrelationId** propagado en todo: header, logs, blobs, BD.
+- **AXA COL deshabilitada por negocio.** MCBrokers solo opera AXA DXN. El adapter `McBrokers.Insurers.AxaCol` se mantiene compilando, pero `InsurersSeed` lo siembra con `IsEnabled=false` y el admin no debería habilitarlo sin instrucción explícita del negocio. REQUIREMENTS.md lista las 5 aseguradoras por completitud; el set operativo real es 4.
 
 ---
 
