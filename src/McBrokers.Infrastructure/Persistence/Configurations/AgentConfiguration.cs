@@ -35,6 +35,10 @@ public class AgentConfiguration : IEntityTypeConfiguration<Agent>
         builder.Property(a => a.IsActive)
             .IsRequired();
 
+        builder.Property(a => a.IsTechnical)
+            .IsRequired()
+            .HasDefaultValue(false);
+
         builder.HasIndex(a => a.Email)
             .IsUnique()
             .HasDatabaseName("UX_Agents_Email");

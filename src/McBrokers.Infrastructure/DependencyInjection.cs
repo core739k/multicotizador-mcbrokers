@@ -140,6 +140,11 @@ public static class DependencyInjection
             options.AddPolicy("RequireAdmin", policy =>
                 policy.RequireAuthenticatedUser()
                       .RequireClaim(System.Security.Claims.ClaimTypes.Role, nameof(McBrokers.Domain.Agents.AgentRole.Admin)));
+
+            options.AddPolicy("RequireTechnicalAdmin", policy =>
+                policy.RequireAuthenticatedUser()
+                      .RequireClaim(System.Security.Claims.ClaimTypes.Role, nameof(McBrokers.Domain.Agents.AgentRole.Admin))
+                      .RequireClaim("mcb:is-technical", "true"));
         });
 
         return services;

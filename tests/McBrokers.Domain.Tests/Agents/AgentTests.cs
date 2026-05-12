@@ -17,6 +17,7 @@ public class AgentTests
         result.Value.FullName.Should().Be("Esteban Contreras");
         result.Value.Role.Should().Be(AgentRole.Agent);
         result.Value.IsActive.Should().BeTrue();
+        result.Value.IsTechnical.Should().BeFalse(because: "newly created agents are never technical by default");
         result.Value.Id.Should().NotBe(Guid.Empty);
     }
 
@@ -70,6 +71,62 @@ public class AgentTests
         agent.ChangeRole(AgentRole.Admin);
 
         agent.Role.Should().Be(AgentRole.Admin);
+    }
+
+    [Fact]
+    public void MakeTechnical_succeeds_when_agent_is_admin()
+    {
+        var agent = Agent.Create(ValidEmail, "Esteban", AgentRole.Admin).Value;
+
+        var result = agent.MakeTechnical();
+
+        result.IsSuccess.Should().BeTrue();
+        agent.IsTechnical.Should().BeTrue();
+    }
+
+    [Fact]
+    public void MakeTechnical_fails_when_agent_is_not_admin()
+    {
+        var agent = Agent.Create(ValidEmail, "Esteban", AgentRole.Agent).Value;
+
+        var result = agent.MakeTechnical();
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Admin",
+            because: "the technical flag is gated on the Admin role to prevent privilege escalation");
+        agent.IsTechnical.Should().BeFalse();
+    }
+
+    [Fact]
+    public void MakeTechnical_fails_when_agent_is_finance()
+    {
+        var agent = Agent.Create(ValidEmail, "Esteban", AgentRole.Finance).Value;
+
+        var result = agent.MakeTechnical();
+
+        result.IsSuccess.Should().BeFalse();
+        agent.IsTechnical.Should().BeFalse();
+    }
+
+    [Fact]
+    public void RevokeTechnical_clears_the_flag()
+    {
+        var agent = Agent.Create(ValidEmail, "Esteban", AgentRole.Admin).Value;
+        agent.MakeTechnical();
+
+        agent.RevokeTechnical();
+
+        agent.IsTechnical.Should().BeFalse();
+    }
+
+    [Fact]
+    public void RevokeTechnical_is_idempotent_when_already_not_technical()
+    {
+        var agent = Agent.Create(ValidEmail, "Esteban", AgentRole.Agent).Value;
+
+        agent.RevokeTechnical();
+
+        agent.IsTechnical.Should().BeFalse();
     }
 
     [Fact]

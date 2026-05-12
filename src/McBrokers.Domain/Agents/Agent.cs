@@ -9,14 +9,16 @@ public sealed class Agent
     public string FullName { get; private set; }
     public AgentRole Role { get; private set; }
     public bool IsActive { get; private set; }
+    public bool IsTechnical { get; private set; }
 
-    private Agent(Guid id, AgentEmail email, string fullName, AgentRole role, bool isActive)
+    private Agent(Guid id, AgentEmail email, string fullName, AgentRole role, bool isActive, bool isTechnical)
     {
         Id = id;
         Email = email;
         FullName = fullName;
         Role = role;
         IsActive = isActive;
+        IsTechnical = isTechnical;
     }
 
     public static Result<Agent> Create(AgentEmail email, string fullName, AgentRole role)
@@ -31,7 +33,8 @@ public sealed class Agent
             email,
             fullName.Trim(),
             role,
-            isActive: true));
+            isActive: true,
+            isTechnical: false));
     }
 
     public void Deactivate() => IsActive = false;
@@ -39,6 +42,19 @@ public sealed class Agent
     public void Reactivate() => IsActive = true;
 
     public void ChangeRole(AgentRole role) => Role = role;
+
+    public Result<Agent> MakeTechnical()
+    {
+        if (Role != AgentRole.Admin)
+        {
+            return Result<Agent>.Failure("Only Admin agents can be granted the technical flag.");
+        }
+
+        IsTechnical = true;
+        return Result<Agent>.Success(this);
+    }
+
+    public void RevokeTechnical() => IsTechnical = false;
 
     public Result<Agent> UpdateFullName(string newFullName)
     {
