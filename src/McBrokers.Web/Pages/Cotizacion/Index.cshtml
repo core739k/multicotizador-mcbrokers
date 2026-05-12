@@ -7,6 +7,11 @@
 
 <h2>Nueva cotización</h2>
 
+<p class="text-muted small">
+    Mostrando vehículos del año <strong>@Model.EffectiveYear</strong>.
+    Cambia con <code>?year=2024</code> en la URL.
+</p>
+
 @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
 {
     <div class="alert alert-danger">@Model.ErrorMessage</div>

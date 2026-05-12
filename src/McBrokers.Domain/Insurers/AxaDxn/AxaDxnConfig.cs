@@ -5,12 +5,13 @@ namespace McBrokers.Domain.Insurers.AxaDxn;
 /// <summary>
 /// Configuración específica de AXA DXN. Los campos de negocio (Tarifa, Descuento, etc.)
 /// los captura el admin general. La URL del endpoint vive en InsurerTechnicalConfig
-/// (sección admin técnico). La Password se persiste cifrada vía IPasswordProtector
-/// en el repositorio.
+/// (sección admin técnico). Password / CopsisD4Key / CopsisB se persisten cifrados vía
+/// IPasswordProtector en EF value converters.
 /// </summary>
 public sealed class AxaDxnConfig
 {
     private const int MaxFieldLength = 100;
+    private const int MaxSecretLength = 200;
     private const int MaxDiscount = 99;
 
     public Guid Id { get; }
@@ -22,13 +23,16 @@ public sealed class AxaDxnConfig
     public int Descuento { get; private set; }
     public int DescuentoPickup { get; private set; }
     public int MesPolizaDefault { get; private set; }
+    public string CopsisD4Key { get; private set; }
+    public string CopsisB { get; private set; }
 
     private AxaDxnConfig(
         Guid id, Guid insurerId,
         string usuario, string password,
         string tarifa, string tarifaPickup,
         int descuento, int descuentoPickup,
-        int mesPolizaDefault)
+        int mesPolizaDefault,
+        string copsisD4Key, string copsisB)
     {
         Id = id;
         InsurerId = insurerId;
@@ -39,6 +43,8 @@ public sealed class AxaDxnConfig
         Descuento = descuento;
         DescuentoPickup = descuentoPickup;
         MesPolizaDefault = mesPolizaDefault;
+        CopsisD4Key = copsisD4Key;
+        CopsisB = copsisB;
     }
 
     public static Result<AxaDxnConfig> Create(
@@ -46,27 +52,30 @@ public sealed class AxaDxnConfig
         string usuario, string password,
         string tarifa, string tarifaPickup,
         int descuento, int descuentoPickup,
-        int mesPolizaDefault)
+        int mesPolizaDefault,
+        string copsisD4Key, string copsisB)
     {
         var validation = Validate(usuario, password, tarifa, tarifaPickup,
-            descuento, descuentoPickup, mesPolizaDefault);
+            descuento, descuentoPickup, mesPolizaDefault, copsisD4Key, copsisB);
         if (!validation.IsSuccess) return Result<AxaDxnConfig>.Failure(validation.Error);
 
         return Result<AxaDxnConfig>.Success(new AxaDxnConfig(
             Guid.NewGuid(), insurerId,
             usuario.Trim(), password,
             tarifa.Trim(), tarifaPickup.Trim(),
-            descuento, descuentoPickup, mesPolizaDefault));
+            descuento, descuentoPickup, mesPolizaDefault,
+            copsisD4Key.Trim(), copsisB.Trim()));
     }
 
     public Result<AxaDxnConfig> Update(
         string usuario, string password,
         string tarifa, string tarifaPickup,
         int descuento, int descuentoPickup,
-        int mesPolizaDefault)
+        int mesPolizaDefault,
+        string copsisD4Key, string copsisB)
     {
         var validation = Validate(usuario, password, tarifa, tarifaPickup,
-            descuento, descuentoPickup, mesPolizaDefault);
+            descuento, descuentoPickup, mesPolizaDefault, copsisD4Key, copsisB);
         if (!validation.IsSuccess) return Result<AxaDxnConfig>.Failure(validation.Error);
 
         Usuario = usuario.Trim();
@@ -76,13 +85,16 @@ public sealed class AxaDxnConfig
         Descuento = descuento;
         DescuentoPickup = descuentoPickup;
         MesPolizaDefault = mesPolizaDefault;
+        CopsisD4Key = copsisD4Key.Trim();
+        CopsisB = copsisB.Trim();
         return Result<AxaDxnConfig>.Success(this);
     }
 
     private static Result<bool> Validate(
         string usuario, string password,
         string tarifa, string tarifaPickup,
-        int descuento, int descuentoPickup, int mesPolizaDefault)
+        int descuento, int descuentoPickup, int mesPolizaDefault,
+        string copsisD4Key, string copsisB)
     {
         if (string.IsNullOrWhiteSpace(usuario) || usuario.Length > MaxFieldLength)
             return Result<bool>.Failure("Usuario must not be empty and must be ≤ 100 chars.");
@@ -98,6 +110,10 @@ public sealed class AxaDxnConfig
             return Result<bool>.Failure($"DescuentoPickup must be between 0 and {MaxDiscount}.");
         if (mesPolizaDefault < 1 || mesPolizaDefault > 12)
             return Result<bool>.Failure("MesPolizaDefault must be between 1 and 12.");
+        if (string.IsNullOrWhiteSpace(copsisD4Key) || copsisD4Key.Length > MaxSecretLength)
+            return Result<bool>.Failure($"CopsisD4Key must not be empty and must be ≤ {MaxSecretLength} chars.");
+        if (string.IsNullOrWhiteSpace(copsisB) || copsisB.Length > MaxSecretLength)
+            return Result<bool>.Failure($"CopsisB must not be empty and must be ≤ {MaxSecretLength} chars.");
         return Result<bool>.Success(true);
     }
 }

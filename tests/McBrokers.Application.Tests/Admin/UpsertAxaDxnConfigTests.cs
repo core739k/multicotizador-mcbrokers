@@ -14,7 +14,8 @@ public class UpsertAxaDxnConfigTests
     private UpsertAxaDxnConfig Handler() => new(_insurers.Object, _repo.Object, _audit.Object);
 
     private static UpsertAxaDxnConfigCommand BuildCommand(Guid insurerId) => new(
-        insurerId, "MCBROKERS", "secret", "RES", "PCK", 15, 20, 5);
+        insurerId, "MCBROKERS", "secret", "RES", "PCK", 15, 20, 5,
+        CopsisD4Key: "d4-test", CopsisB: "b-test");
 
     [Fact]
     public async Task Adds_new_config_when_none_exists()
@@ -40,7 +41,7 @@ public class UpsertAxaDxnConfigTests
     public async Task Updates_existing_config_when_one_already_present()
     {
         var insurer = Insurer.Create(InsurerCode.AxaDxn, "AXA DXN", 5).Value;
-        var existingConfig = AxaDxnConfig.Create(insurer.Id, "old", "old-pwd", "OLD", "OLD-P", 5, 5, 1).Value;
+        var existingConfig = AxaDxnConfig.Create(insurer.Id, "old", "old-pwd", "OLD", "OLD-P", 5, 5, 1, "d4-old", "b-old").Value;
         var snapshot = new AxaDxnConfigWithBusinesses(existingConfig, Array.Empty<AxaDxnBusiness>());
 
         _insurers.Setup(r => r.GetByIdAsync(insurer.Id, It.IsAny<CancellationToken>()))
@@ -84,7 +85,7 @@ public class UpsertAxaDxnConfigTests
             .ReturnsAsync((AxaDxnConfigWithBusinesses?)null);
 
         // mes 0 is invalid (must be 1..12)
-        var invalidCommand = new UpsertAxaDxnConfigCommand(insurer.Id, "u", "p", "RES", "PCK", 0, 0, 0);
+        var invalidCommand = new UpsertAxaDxnConfigCommand(insurer.Id, "u", "p", "RES", "PCK", 0, 0, 0, "d4", "b");
         var result = await Handler().ExecuteAsync(invalidCommand, CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();

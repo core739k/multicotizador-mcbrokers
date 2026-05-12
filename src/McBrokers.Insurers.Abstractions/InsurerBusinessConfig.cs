@@ -25,4 +25,6 @@ public sealed record AxaDxnAdapterConfig(
     string SelectedBusinessName,
     string? PolizaAutos,
     string? PolizaPickup,
-    int BusinessMes) : InsurerBusinessConfig;
+    int BusinessMes,
+    string CopsisD4Key,
+    string CopsisB) : InsurerBusinessConfig;

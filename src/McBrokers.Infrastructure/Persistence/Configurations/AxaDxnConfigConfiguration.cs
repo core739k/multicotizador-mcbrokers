@@ -27,6 +27,11 @@ public class AxaDxnConfigConfiguration : IEntityTypeConfiguration<AxaDxnConfig>
         builder.Property(c => c.DescuentoPickup).IsRequired();
         builder.Property(c => c.MesPolizaDefault).IsRequired();
 
+        // CopsisD4Key y CopsisB también se cifran (DataProtection) — mismo trato que Password.
+        // El tamaño 2000 cubre el ciphertext expandido para secrets de hasta ~200 chars plaintext.
+        builder.Property(c => c.CopsisD4Key).HasMaxLength(2000).IsRequired();
+        builder.Property(c => c.CopsisB).HasMaxLength(2000).IsRequired();
+
         builder.HasIndex(c => c.InsurerId)
             .IsUnique()
             .HasDatabaseName("UX_AxaDxnConfigs_Insurer");

@@ -17,11 +17,9 @@ namespace McBrokers.Insurers.AxaDxn.Mapping;
 /// </summary>
 public sealed class AxaDxnEmissionExecutor
 {
-    // TODO Fase 5+ — mover a configuración / Key Vault. Hoy son constantes scaffold
-    // hasta que MCBrokers provea los valores productivos de COPSIS.
+    // d4_key y b vienen del AxaDxnConfig (BD, cifrados con DataProtection). La URL base
+    // y el timeout siguen como constantes — son estables del contrato COPSIS.
     private const string CopsisBaseUrl = "https://lb1.copsis.com/sio4apolizas-lazy-fetch/EmisionIncisoAxaAPI";
-    private const string D4Key = "REPLACE_ME_D4_KEY";
-    private const string BParam = "REPLACE_ME_B";
     private const int CopsisTimeoutSeconds = 50;
 
     private readonly HttpClient _http;
@@ -42,7 +40,7 @@ public sealed class AxaDxnEmissionExecutor
                 ErrorCategory.Technical, latencyMs: 0, rawRequest: null, rawResponse: null);
         }
 
-        var url = $"{CopsisBaseUrl}?d4_key={Uri.EscapeDataString(D4Key)}&b={Uri.EscapeDataString(BParam)}";
+        var url = $"{CopsisBaseUrl}?d4_key={Uri.EscapeDataString(axa.CopsisD4Key)}&b={Uri.EscapeDataString(axa.CopsisB)}";
 
         // Payload JSON — estructura aproximada según Documentación/Servicio AXA — Detalle Técnico.
         // El campo numCotizacion es el folio devuelto por la cotización (ExternalQuoteRef).

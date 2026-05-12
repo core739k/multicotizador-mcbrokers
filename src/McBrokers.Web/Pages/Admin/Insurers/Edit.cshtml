@@ -111,6 +111,21 @@
                 </div>
                 <div class="row g-2 mb-2">
                     <div class="col">
+                        <label class="form-label small">COPSIS d4_key</label>
+                        <input type="password" class="form-control form-control-sm" name="AxaDxnConfigInput.CopsisD4Key"
+                               placeholder="@(axa is null ? "" : "•••••• (re-captura para sobrescribir)")" required />
+                    </div>
+                    <div class="col">
+                        <label class="form-label small">COPSIS b</label>
+                        <input type="password" class="form-control form-control-sm" name="AxaDxnConfigInput.CopsisB"
+                               placeholder="@(axa is null ? "" : "•••••• (re-captura para sobrescribir)")" required />
+                    </div>
+                </div>
+                <div class="form-text mb-3">
+                    Parámetros de URL para la API de emisión COPSIS. Se cifran en BD (DataProtection).
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col">
                         <label class="form-label small">Tarifa (autos)</label>
                         <input class="form-control form-control-sm" name="AxaDxnConfigInput.Tarifa"
                                value="@axa?.Tarifa" required />

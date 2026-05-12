@@ -271,7 +271,9 @@ public sealed class EmitPolicy
                     SelectedBusinessName: business?.Nombre.ToString() ?? string.Empty,
                     PolizaAutos: business?.PolizaAutos,
                     PolizaPickup: business?.PolizaPickup,
-                    BusinessMes: business?.Mes ?? snapshot.Config.MesPolizaDefault);
+                    BusinessMes: business?.Mes ?? snapshot.Config.MesPolizaDefault,
+                    CopsisD4Key: snapshot.Config.CopsisD4Key,
+                    CopsisB: snapshot.Config.CopsisB);
             }
         }
 

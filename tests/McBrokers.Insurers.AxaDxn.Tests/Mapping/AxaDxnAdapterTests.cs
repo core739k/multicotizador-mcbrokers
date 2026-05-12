@@ -17,7 +17,9 @@ public class AxaDxnAdapterTests
         SelectedBusinessName: "Strm",
         PolizaAutos: "POL000123",
         PolizaPickup: null,
-        BusinessMes: 5);
+        BusinessMes: 5,
+        CopsisD4Key: "d4-test-key",
+        CopsisB: "b-test-param");
 
     private static InsurerQuoteRequest SampleRequest(PackageCode package = PackageCode.Amplia) => new(
         CorrelationId: "corr-ad-001",

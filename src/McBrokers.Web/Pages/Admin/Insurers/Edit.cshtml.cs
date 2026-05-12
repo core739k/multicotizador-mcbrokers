@@ -134,7 +134,9 @@ public class EditModel : PageModel
                 AxaDxnConfigInput.TarifaPickup,
                 AxaDxnConfigInput.Descuento,
                 AxaDxnConfigInput.DescuentoPickup,
-                AxaDxnConfigInput.MesPolizaDefault),
+                AxaDxnConfigInput.MesPolizaDefault,
+                AxaDxnConfigInput.CopsisD4Key,
+                AxaDxnConfigInput.CopsisB),
             cancellationToken);
 
         if (!result.IsSuccess)
@@ -225,6 +227,8 @@ public class EditModel : PageModel
         [Range(0, 99)] public int Descuento { get; set; }
         [Range(0, 99)] public int DescuentoPickup { get; set; }
         [Range(1, 12)] public int MesPolizaDefault { get; set; } = DateTime.UtcNow.Month;
+        [Required] public string CopsisD4Key { get; set; } = string.Empty;
+        [Required] public string CopsisB { get; set; } = string.Empty;
     }
 
     public class AxaDxnBusinessInputModel

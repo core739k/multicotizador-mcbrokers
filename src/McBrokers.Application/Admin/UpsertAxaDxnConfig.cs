@@ -34,7 +34,8 @@ public sealed class UpsertAxaDxnConfig
             var creation = AxaDxnConfig.Create(
                 command.InsurerId, command.Usuario, command.Password,
                 command.Tarifa, command.TarifaPickup,
-                command.Descuento, command.DescuentoPickup, command.MesPolizaDefault);
+                command.Descuento, command.DescuentoPickup, command.MesPolizaDefault,
+                command.CopsisD4Key, command.CopsisB);
             if (!creation.IsSuccess) return Result<Guid>.Failure(creation.Error);
 
             await _repo.AddAsync(creation.Value, cancellationToken).ConfigureAwait(false);
@@ -48,7 +49,8 @@ public sealed class UpsertAxaDxnConfig
         var update = existing.Config.Update(
             command.Usuario, command.Password,
             command.Tarifa, command.TarifaPickup,
-            command.Descuento, command.DescuentoPickup, command.MesPolizaDefault);
+            command.Descuento, command.DescuentoPickup, command.MesPolizaDefault,
+            command.CopsisD4Key, command.CopsisB);
         if (!update.IsSuccess) return Result<Guid>.Failure(update.Error);
 
         await _repo.UpdateAsync(existing.Config, cancellationToken).ConfigureAwait(false);

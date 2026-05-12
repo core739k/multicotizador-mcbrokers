@@ -62,6 +62,16 @@ public class AppDbContext : DbContext
                 .HasConversion(
                     plain => protector.Protect(plain),
                     cipher => protector.Unprotect(cipher));
+            modelBuilder.Entity<Domain.Insurers.AxaDxn.AxaDxnConfig>()
+                .Property(c => c.CopsisD4Key)
+                .HasConversion(
+                    plain => protector.Protect(plain),
+                    cipher => protector.Unprotect(cipher));
+            modelBuilder.Entity<Domain.Insurers.AxaDxn.AxaDxnConfig>()
+                .Property(c => c.CopsisB)
+                .HasConversion(
+                    plain => protector.Protect(plain),
+                    cipher => protector.Unprotect(cipher));
         }
     }
 }

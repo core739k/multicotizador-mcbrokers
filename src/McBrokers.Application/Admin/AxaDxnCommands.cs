@@ -10,7 +10,9 @@ public sealed record UpsertAxaDxnConfigCommand(
     string TarifaPickup,
     int Descuento,
     int DescuentoPickup,
-    int MesPolizaDefault);
+    int MesPolizaDefault,
+    string CopsisD4Key,
+    string CopsisB);
 
 public sealed record UpsertAxaDxnBusinessCommand(
     Guid InsurerId,

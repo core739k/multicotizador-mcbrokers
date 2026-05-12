@@ -22,6 +22,13 @@ public class IndexModel : PageModel
     [BindProperty]
     public InputModel Input { get; set; } = new();
 
+    // El año del catálogo. Soporta ?year= en GET y se preserva en POST
+    // porque la query string viaja en el action="" del form.
+    [BindProperty(SupportsGet = true)]
+    public int? Year { get; set; }
+
+    public int EffectiveYear => Year ?? DateTime.UtcNow.Year;
+
     public IReadOnlyList<VehicleMasterView> AvailableVehicles { get; private set; } = Array.Empty<VehicleMasterView>();
     public string? ErrorMessage { get; private set; }
 
@@ -84,8 +91,7 @@ public class IndexModel : PageModel
 
     private async Task LoadVehiclesAsync(CancellationToken cancellationToken)
     {
-        var year = DateTime.UtcNow.Year;
-        var view = await _catalog.ExecuteAsync(year, cancellationToken);
+        var view = await _catalog.ExecuteAsync(EffectiveYear, cancellationToken);
         AvailableVehicles = view.Vehicles;
     }
 
