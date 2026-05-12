@@ -44,7 +44,7 @@ public sealed class QualitasQuoteAdapter : IInsurerAdapter
             CharSet = "utf-8",
         };
 
-        using var http = new HttpRequestMessage(HttpMethod.Post, request.EnvironmentConfig.EndpointUrl)
+        using var http = new HttpRequestMessage(HttpMethod.Post, request.Connection.EndpointUrl)
         {
             Content = content,
         };
@@ -54,7 +54,7 @@ public sealed class QualitasQuoteAdapter : IInsurerAdapter
         var sw = Stopwatch.StartNew();
         try
         {
-            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(request.EnvironmentConfig.TimeoutSeconds));
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(request.Connection.TimeoutSeconds));
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
             using var response = await _http.SendAsync(http, linked.Token).ConfigureAwait(false);
@@ -85,7 +85,7 @@ public sealed class QualitasQuoteAdapter : IInsurerAdapter
             sw.Stop();
             return new InsurerQuoteOutcome.Failure(new InsurerErrorResponse(
                 QuotationInsurerStatus.Timeout, ErrorCategory.InsurerDown,
-                "TIMEOUT", $"Quálitas no respondió en {request.EnvironmentConfig.TimeoutSeconds}s.",
+                "TIMEOUT", $"Quálitas no respondió en {request.Connection.TimeoutSeconds}s.",
                 (int)sw.ElapsedMilliseconds, soapXml, null));
         }
         catch (HttpRequestException ex)

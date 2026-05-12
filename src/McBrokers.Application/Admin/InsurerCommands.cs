@@ -13,7 +13,6 @@ public sealed record UpdateInsurerCommand(
 
 public sealed record UpsertInsurerConfigCommand(
     Guid InsurerId,
-    InsurerEnvironment Environment,
     string EndpointUrl,
     string BusinessNumber,
     string AgentCode,

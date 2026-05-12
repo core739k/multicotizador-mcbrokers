@@ -5,7 +5,7 @@ namespace McBrokers.Insurers.Abstractions;
 public sealed record InsurerQuoteRequest(
     string CorrelationId,
     InsurerCredentials Credentials,
-    InsurerEnvironmentConfig EnvironmentConfig,
+    InsurerConnectionConfig Connection,
     VehicleSelection Vehicle,
     PackageCode Package,
     string PackageExternalCode,
@@ -19,7 +19,7 @@ public sealed record InsurerQuoteRequest(
 
 public sealed record InsurerCredentials(string Username, string Password, string? BusinessUnit);
 
-public sealed record InsurerEnvironmentConfig(string EndpointUrl, int TimeoutSeconds, int MaxRetries);
+public sealed record InsurerConnectionConfig(string EndpointUrl, int TimeoutSeconds, int MaxRetries);
 
 public sealed record VehicleSelection(
     int Year,

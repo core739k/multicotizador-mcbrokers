@@ -40,7 +40,7 @@ public sealed class AxaColQuoteAdapter : IInsurerAdapter
         using var content = new StringContent(soapXml, Encoding.UTF8);
         content.Headers.ContentType = new MediaTypeHeaderValue("text/xml") { CharSet = "utf-8" };
 
-        using var http = new HttpRequestMessage(HttpMethod.Post, request.EnvironmentConfig.EndpointUrl)
+        using var http = new HttpRequestMessage(HttpMethod.Post, request.Connection.EndpointUrl)
         {
             Content = content,
         };
@@ -54,7 +54,7 @@ public sealed class AxaColQuoteAdapter : IInsurerAdapter
         var sw = Stopwatch.StartNew();
         try
         {
-            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(request.EnvironmentConfig.TimeoutSeconds));
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(request.Connection.TimeoutSeconds));
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
             using var response = await _http.SendAsync(http, linked.Token).ConfigureAwait(false);
@@ -78,7 +78,7 @@ public sealed class AxaColQuoteAdapter : IInsurerAdapter
             sw.Stop();
             return new InsurerQuoteOutcome.Failure(new InsurerErrorResponse(
                 QuotationInsurerStatus.Timeout, ErrorCategory.InsurerDown,
-                "TIMEOUT", $"AXA COL no respondió en {request.EnvironmentConfig.TimeoutSeconds}s.",
+                "TIMEOUT", $"AXA COL no respondió en {request.Connection.TimeoutSeconds}s.",
                 (int)sw.ElapsedMilliseconds, soapXml, null));
         }
         catch (HttpRequestException ex)

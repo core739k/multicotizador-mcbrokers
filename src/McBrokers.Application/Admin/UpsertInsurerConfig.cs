@@ -28,13 +28,12 @@ public sealed class UpsertInsurerConfig
             return Result<Guid>.Failure($"Insurer with id '{command.InsurerId}' not found.");
         }
 
-        var existing = await _configs.GetAsync(command.InsurerId, command.Environment, cancellationToken).ConfigureAwait(false);
+        var existing = await _configs.GetAsync(command.InsurerId, cancellationToken).ConfigureAwait(false);
 
         if (existing is null)
         {
             var creation = InsurerConfig.Create(
                 command.InsurerId,
-                command.Environment,
                 command.EndpointUrl,
                 command.BusinessNumber,
                 command.AgentCode,
@@ -49,7 +48,7 @@ public sealed class UpsertInsurerConfig
                 action: "InsurerConfig.Create",
                 entityType: "InsurerConfig",
                 entityId: creation.Value.Id.ToString(),
-                payload: new { creation.Value.InsurerId, creation.Value.Environment, creation.Value.EndpointUrl },
+                payload: new { creation.Value.InsurerId, creation.Value.EndpointUrl },
                 cancellationToken).ConfigureAwait(false);
 
             return Result<Guid>.Success(creation.Value.Id);
@@ -70,7 +69,7 @@ public sealed class UpsertInsurerConfig
             action: "InsurerConfig.Update",
             entityType: "InsurerConfig",
             entityId: existing.Id.ToString(),
-            payload: new { existing.InsurerId, existing.Environment, existing.EndpointUrl },
+            payload: new { existing.InsurerId, existing.EndpointUrl },
             cancellationToken).ConfigureAwait(false);
 
         return Result<Guid>.Success(existing.Id);

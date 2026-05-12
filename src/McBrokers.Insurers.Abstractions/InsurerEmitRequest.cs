@@ -3,7 +3,7 @@ namespace McBrokers.Insurers.Abstractions;
 public sealed record InsurerEmitRequest(
     string CorrelationId,
     InsurerCredentials Credentials,
-    InsurerEnvironmentConfig EnvironmentConfig,
+    InsurerConnectionConfig Connection,
     string ExternalQuoteRef,
     EmissionVehicleData Vehicle,
     EmissionContactData Contractor,

@@ -10,7 +10,7 @@ public class AnaAdapterTests
     private static InsurerQuoteRequest SampleRequest(PackageCode package = PackageCode.Amplia) => new(
         CorrelationId: "corr-a-001",
         Credentials: new InsurerCredentials("13503", "9zbi10Ly", "2213"),
-        EnvironmentConfig: new InsurerEnvironmentConfig("https://server.anaseguros.com.mx/WSCOR/service.asmx", 30, 3),
+        Connection: new InsurerConnectionConfig("https://server.anaseguros.com.mx/WSCOR/service.asmx", 30, 3),
         Vehicle: new VehicleSelection(2025, "CHEVROLET", "AVEO", "LT", "12345AB"),
         Package: package,
         PackageExternalCode: "1",

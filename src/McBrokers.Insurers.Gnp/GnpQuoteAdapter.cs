@@ -36,7 +36,7 @@ public sealed class GnpQuoteAdapter : IInsurerAdapter
         using var content = new StringContent(requestXml, Encoding.UTF8);
         content.Headers.ContentType = new MediaTypeHeaderValue("application/xml");
 
-        using var http = new HttpRequestMessage(HttpMethod.Post, request.EnvironmentConfig.EndpointUrl)
+        using var http = new HttpRequestMessage(HttpMethod.Post, request.Connection.EndpointUrl)
         {
             Content = content,
         };
@@ -45,7 +45,7 @@ public sealed class GnpQuoteAdapter : IInsurerAdapter
         var sw = Stopwatch.StartNew();
         try
         {
-            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(request.EnvironmentConfig.TimeoutSeconds));
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(request.Connection.TimeoutSeconds));
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
 
             using var response = await _http.SendAsync(http, linked.Token).ConfigureAwait(false);
@@ -77,7 +77,7 @@ public sealed class GnpQuoteAdapter : IInsurerAdapter
             sw.Stop();
             return new InsurerQuoteOutcome.Failure(new InsurerErrorResponse(
                 QuotationInsurerStatus.Timeout, ErrorCategory.InsurerDown,
-                "TIMEOUT", $"GNP no respondió en {request.EnvironmentConfig.TimeoutSeconds}s.",
+                "TIMEOUT", $"GNP no respondió en {request.Connection.TimeoutSeconds}s.",
                 (int)sw.ElapsedMilliseconds, requestXml, null));
         }
         catch (HttpRequestException ex)

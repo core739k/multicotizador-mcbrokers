@@ -9,7 +9,7 @@ public class AxaDxnAdapterTests
     private static InsurerQuoteRequest SampleRequest(PackageCode package = PackageCode.Amplia) => new(
         CorrelationId: "corr-ad-001",
         Credentials: new InsurerCredentials("MXS00102308A", "Id9LkOi30nceHCu4qh6F", "POL000123"),
-        EnvironmentConfig: new InsurerEnvironmentConfig(
+        Connection: new InsurerConnectionConfig(
             "https://serviciosweb.axa.com.mx:9104/WSFlotillas/services/FlotillasService", 50, 3),
         Vehicle: new VehicleSelection(2025, "CHEVROLET", "AVEO", "LT", "01112233"),
         Package: package,

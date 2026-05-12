@@ -1,5 +1,4 @@
 using McBrokers.Application.Admin;
-using McBrokers.Domain.Insurers;
 
 namespace McBrokers.Api.Endpoints;
 
@@ -15,7 +14,7 @@ public static class AdminInsurersEndpoints
         group.MapGet("/{id:guid}", GetById);
         group.MapPost("", Create);
         group.MapPut("/{id:guid}", Update);
-        group.MapPut("/{id:guid}/configs/{environment}", UpsertConfig);
+        group.MapPut("/{id:guid}/config", UpsertConfig);
 
         return app;
     }
@@ -55,18 +54,12 @@ public static class AdminInsurersEndpoints
 
     private static async Task<IResult> UpsertConfig(
         Guid id,
-        string environment,
         UpsertInsurerConfigBody body,
         UpsertInsurerConfig handler,
         CancellationToken ct)
     {
-        if (!Enum.TryParse<InsurerEnvironment>(environment, ignoreCase: true, out var env))
-        {
-            return Results.Problem($"Unknown environment '{environment}'.", statusCode: StatusCodes.Status400BadRequest);
-        }
-
         var cmd = new UpsertInsurerConfigCommand(
-            id, env,
+            id,
             body.EndpointUrl, body.BusinessNumber, body.AgentCode,
             body.KeyVaultSecretName, body.TimeoutSeconds, body.MaxRetries);
 

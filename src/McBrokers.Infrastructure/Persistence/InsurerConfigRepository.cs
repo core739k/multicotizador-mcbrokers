@@ -10,15 +10,10 @@ public class InsurerConfigRepository : IInsurerConfigRepository
 
     public InsurerConfigRepository(AppDbContext db) => _db = db;
 
-    public Task<InsurerConfig?> GetAsync(Guid insurerId, InsurerEnvironment environment, CancellationToken cancellationToken) =>
+    public Task<InsurerConfig?> GetAsync(Guid insurerId, CancellationToken cancellationToken) =>
         _db.InsurerConfigs.SingleOrDefaultAsync(
-            c => c.InsurerId == insurerId && c.Environment == environment,
+            c => c.InsurerId == insurerId,
             cancellationToken);
-
-    public async Task<IReadOnlyList<InsurerConfig>> ListByInsurerAsync(Guid insurerId, CancellationToken cancellationToken) =>
-        await _db.InsurerConfigs
-            .Where(c => c.InsurerId == insurerId)
-            .ToListAsync(cancellationToken).ConfigureAwait(false);
 
     public async Task AddAsync(InsurerConfig config, CancellationToken cancellationToken)
     {

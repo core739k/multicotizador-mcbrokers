@@ -97,8 +97,7 @@ public sealed class ProcessQuotation
             return;
         }
 
-        var config = await _configs.GetAsync(insurer.Id, InsurerEnvironment.Production, cancellationToken).ConfigureAwait(false)
-            ?? await _configs.GetAsync(insurer.Id, InsurerEnvironment.Staging, cancellationToken).ConfigureAwait(false);
+        var config = await _configs.GetAsync(insurer.Id, cancellationToken).ConfigureAwait(false);
 
         if (config is null)
         {
@@ -126,7 +125,7 @@ public sealed class ProcessQuotation
         var insurerRequest = new InsurerQuoteRequest(
             CorrelationId: quotation.CorrelationId,
             Credentials: new InsurerCredentials(creds.Username, creds.Password, config.BusinessNumber),
-            EnvironmentConfig: new InsurerEnvironmentConfig(config.EndpointUrl, config.TimeoutSeconds, config.MaxRetries),
+            Connection: new InsurerConnectionConfig(config.EndpointUrl, config.TimeoutSeconds, config.MaxRetries),
             Vehicle: new VehicleSelection(vehicle.Year, vehicle.Brand, vehicle.Model, vehicle.Version, insurerMapping.ExternalClave),
             Package: quotation.Package,
             PackageExternalCode: packageCode,

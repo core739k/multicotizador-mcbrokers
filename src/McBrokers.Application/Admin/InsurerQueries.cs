@@ -54,15 +54,14 @@ public sealed class GetInsurer
         var insurer = await _insurers.GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
         if (insurer is null) return null;
 
-        var configs = await _configs.ListByInsurerAsync(id, cancellationToken).ConfigureAwait(false);
+        var config = await _configs.GetAsync(id, cancellationToken).ConfigureAwait(false);
         var packageMappings = await _packageMappings.ListByInsurerAsync(id, cancellationToken).ConfigureAwait(false);
-        return InsurerDetailView.From(insurer, configs, packageMappings);
+        return InsurerDetailView.From(insurer, config, packageMappings);
     }
 }
 
 public sealed record InsurerConfigView(
     Guid Id,
-    InsurerEnvironment Environment,
     string EndpointUrl,
     string BusinessNumber,
     string AgentCode,
@@ -71,7 +70,7 @@ public sealed record InsurerConfigView(
     int MaxRetries)
 {
     public static InsurerConfigView From(InsurerConfig cfg) => new(
-        cfg.Id, cfg.Environment, cfg.EndpointUrl, cfg.BusinessNumber,
+        cfg.Id, cfg.EndpointUrl, cfg.BusinessNumber,
         cfg.AgentCode, cfg.KeyVaultSecretName, cfg.TimeoutSeconds, cfg.MaxRetries);
 }
 
@@ -87,14 +86,14 @@ public sealed record InsurerPackageMappingView(
 
 public sealed record InsurerDetailView(
     InsurerView Insurer,
-    IReadOnlyList<InsurerConfigView> Configs,
+    InsurerConfigView? Config,
     IReadOnlyList<InsurerPackageMappingView> PackageMappings)
 {
     public static InsurerDetailView From(
         Insurer insurer,
-        IReadOnlyList<InsurerConfig> configs,
+        InsurerConfig? config,
         IReadOnlyList<InsurerPackageMapping> packageMappings) =>
         new(InsurerView.From(insurer),
-            configs.Select(InsurerConfigView.From).ToList(),
+            config is null ? null : InsurerConfigView.From(config),
             packageMappings.Select(InsurerPackageMappingView.From).ToList());
 }

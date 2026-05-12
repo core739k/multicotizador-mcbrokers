@@ -9,7 +9,7 @@ public class AxaColAdapterTests
     private static InsurerQuoteRequest SampleRequest() => new(
         CorrelationId: "corr-ac-001",
         Credentials: new InsurerCredentials("AXAUSER", "AXAPASS", "AUTOS_PRODUCT"),
-        EnvironmentConfig: new InsurerEnvironmentConfig(
+        Connection: new InsurerConnectionConfig(
             "https://serviciosweb.axa.com.mx:9104/EmisionPolizasWS/services/SolicitudPolizasService", 50, 3),
         Vehicle: new VehicleSelection(2025, "CHEVROLET", "AVEO", "LT", "01112233"),
         Package: PackageCode.Amplia,

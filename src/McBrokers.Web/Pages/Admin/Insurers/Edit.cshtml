@@ -44,7 +44,7 @@
             </div>
 
             <div class="mb-3">
-                <label asp-for="Input.LogoUrl" class="form-label">Logo URL (https)</label>
+                <label asp-for="Input.LogoUrl" class="form-label">URL del logo (https)</label>
                 <input class="form-control" asp-for="Input.LogoUrl" placeholder="https://..." />
             </div>
 
@@ -79,51 +79,52 @@
 
         <hr class="my-4" />
 
-        <h4>Configuración por entorno</h4>
-        @foreach (var env in Model.AllEnvironments)
-        {
-            var cfg = Model.Detail.Configs.FirstOrDefault(c => c.Environment == env);
-            <div class="card mb-3">
-                <div class="card-header">@env</div>
-                <div class="card-body">
-                    <form method="post" asp-page-handler="Config">
-                        <input type="hidden" name="ConfigInput.InsurerId" value="@Model.Detail.Insurer.Id" />
-                        <input type="hidden" name="ConfigInput.Environment" value="@env" />
-
-                        <div class="mb-2">
-                            <label class="form-label small">Endpoint URL (https)</label>
-                            <input class="form-control form-control-sm" name="ConfigInput.EndpointUrl" value="@cfg?.EndpointUrl" required />
-                        </div>
-                        <div class="row g-2 mb-2">
-                            <div class="col">
-                                <label class="form-label small">Business Number</label>
-                                <input class="form-control form-control-sm" name="ConfigInput.BusinessNumber" value="@cfg?.BusinessNumber" required />
-                            </div>
-                            <div class="col">
-                                <label class="form-label small">Agent Code</label>
-                                <input class="form-control form-control-sm" name="ConfigInput.AgentCode" value="@cfg?.AgentCode" required />
-                            </div>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label small">Key Vault secret name</label>
-                            <input class="form-control form-control-sm" name="ConfigInput.KeyVaultSecretName" value="@cfg?.KeyVaultSecretName" required />
-                            <div class="form-text">Los secretos en sí viven en Key Vault, aquí solo el nombre.</div>
-                        </div>
-                        <div class="row g-2 mb-2">
-                            <div class="col">
-                                <label class="form-label small">Timeout (s)</label>
-                                <input type="number" min="1" max="600" class="form-control form-control-sm" name="ConfigInput.TimeoutSeconds" value="@(cfg?.TimeoutSeconds ?? 30)" required />
-                            </div>
-                            <div class="col">
-                                <label class="form-label small">Max retries</label>
-                                <input type="number" min="0" class="form-control form-control-sm" name="ConfigInput.MaxRetries" value="@(cfg?.MaxRetries ?? 3)" required />
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn btn-sm btn-primary">Guardar</button>
-                    </form>
-                </div>
-            </div>
+        <h4>Configuración de conexión</h4>
+        <p class="text-muted small">
+            MCBrokers usa las mismas credenciales productivas para pruebas — se avisa a la aseguradora
+            cuando son cotizaciones de prueba. Por eso solo hay una configuración por aseguradora.
+        </p>
+        @{
+            var cfg = Model.Detail.Config;
         }
+        <div class="card mb-3">
+            <div class="card-body">
+                <form method="post" asp-page-handler="Config">
+                    <input type="hidden" name="ConfigInput.InsurerId" value="@Model.Detail.Insurer.Id" />
+
+                    <div class="mb-2">
+                        <label class="form-label small">URL del endpoint (https)</label>
+                        <input class="form-control form-control-sm" name="ConfigInput.EndpointUrl" value="@cfg?.EndpointUrl" required />
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col">
+                            <label class="form-label small">Número de negocio</label>
+                            <input class="form-control form-control-sm" name="ConfigInput.BusinessNumber" value="@cfg?.BusinessNumber" required />
+                        </div>
+                        <div class="col">
+                            <label class="form-label small">Código de agente</label>
+                            <input class="form-control form-control-sm" name="ConfigInput.AgentCode" value="@cfg?.AgentCode" required />
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Nombre del secreto en Key Vault</label>
+                        <input class="form-control form-control-sm" name="ConfigInput.KeyVaultSecretName" value="@cfg?.KeyVaultSecretName" required />
+                        <div class="form-text">Los secretos en sí viven en Key Vault, aquí solo el nombre.</div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col">
+                            <label class="form-label small">Tiempo de espera (s)</label>
+                            <input type="number" min="1" max="600" class="form-control form-control-sm" name="ConfigInput.TimeoutSeconds" value="@(cfg?.TimeoutSeconds ?? 30)" required />
+                        </div>
+                        <div class="col">
+                            <label class="form-label small">Reintentos máximos</label>
+                            <input type="number" min="0" class="form-control form-control-sm" name="ConfigInput.MaxRetries" value="@(cfg?.MaxRetries ?? 3)" required />
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-sm btn-primary">Guardar</button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>

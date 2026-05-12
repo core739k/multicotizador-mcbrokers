@@ -10,7 +10,7 @@ public class GnpRequestBuilderTests
     private static InsurerQuoteRequest SampleRequest(PackageCode package = PackageCode.Amplia) => new(
         CorrelationId: "corr-abc-123",
         Credentials: new InsurerCredentials("ECONTR298814", "Mcbrokers040923", "NOP0000077"),
-        EnvironmentConfig: new InsurerEnvironmentConfig("https://api.service.gnp.com.mx/autos/wsp/cotizador/cotizar", 30, 3),
+        Connection: new InsurerConnectionConfig("https://api.service.gnp.com.mx/autos/wsp/cotizador/cotizar", 30, 3),
         Vehicle: new VehicleSelection(
             Year: 2025, Brand: "CHEVROLET", Model: "AVEO", Version: "LT",
             ExternalClave: "GNP112233"),

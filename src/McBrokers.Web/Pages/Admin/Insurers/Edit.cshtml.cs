@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using McBrokers.Application.Admin;
-using McBrokers.Domain.Insurers;
 using McBrokers.Domain.Quotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -38,7 +37,6 @@ public class EditModel : PageModel
     public InsurerDetailView Detail { get; private set; } = null!;
     public string? ErrorMessage { get; private set; }
     public string? SuccessMessage { get; private set; }
-    public IReadOnlyList<InsurerEnvironment> AllEnvironments { get; } = Enum.GetValues<InsurerEnvironment>();
 
     public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken cancellationToken)
     {
@@ -79,7 +77,6 @@ public class EditModel : PageModel
         var result = await _upsertConfig.ExecuteAsync(
             new UpsertInsurerConfigCommand(
                 ConfigInput.InsurerId,
-                ConfigInput.Environment,
                 ConfigInput.EndpointUrl,
                 ConfigInput.BusinessNumber,
                 ConfigInput.AgentCode,
@@ -94,7 +91,7 @@ public class EditModel : PageModel
             return await Reload(ConfigInput.InsurerId, cancellationToken);
         }
 
-        SuccessMessage = $"Configuración {ConfigInput.Environment} guardada.";
+        SuccessMessage = "Configuración guardada.";
         return await Reload(ConfigInput.InsurerId, cancellationToken);
     }
 
@@ -132,7 +129,6 @@ public class EditModel : PageModel
     public class ConfigInputModel
     {
         public Guid InsurerId { get; set; }
-        public InsurerEnvironment Environment { get; set; }
         public string EndpointUrl { get; set; } = string.Empty;
         public string BusinessNumber { get; set; } = string.Empty;
         public string AgentCode { get; set; } = string.Empty;

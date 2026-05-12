@@ -42,7 +42,7 @@ public sealed class AnaQuoteAdapter : IInsurerAdapter
     {
         // Resuelve EdoMun real desde ANA ColoniaxCP (con cache 24h). Si el servicio falla, fallback al CP.
         var postal = await _postalResolver
-            .ResolveAsync(request.PostalCode, request.Credentials, request.EnvironmentConfig.EndpointUrl, cancellationToken)
+            .ResolveAsync(request.PostalCode, request.Credentials, request.Connection.EndpointUrl, cancellationToken)
             .ConfigureAwait(false);
         var edoMun = postal.EdoMun;
 
@@ -55,7 +55,7 @@ public sealed class AnaQuoteAdapter : IInsurerAdapter
             CharSet = "utf-8",
         };
 
-        using var http = new HttpRequestMessage(HttpMethod.Post, request.EnvironmentConfig.EndpointUrl)
+        using var http = new HttpRequestMessage(HttpMethod.Post, request.Connection.EndpointUrl)
         {
             Content = content,
         };
@@ -65,7 +65,7 @@ public sealed class AnaQuoteAdapter : IInsurerAdapter
         var sw = Stopwatch.StartNew();
         try
         {
-            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(request.EnvironmentConfig.TimeoutSeconds));
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(request.Connection.TimeoutSeconds));
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
             using var response = await _http.SendAsync(http, linked.Token).ConfigureAwait(false);
@@ -89,7 +89,7 @@ public sealed class AnaQuoteAdapter : IInsurerAdapter
             sw.Stop();
             return new InsurerQuoteOutcome.Failure(new InsurerErrorResponse(
                 QuotationInsurerStatus.Timeout, ErrorCategory.InsurerDown,
-                "TIMEOUT", $"ANA no respondió en {request.EnvironmentConfig.TimeoutSeconds}s.",
+                "TIMEOUT", $"ANA no respondió en {request.Connection.TimeoutSeconds}s.",
                 (int)sw.ElapsedMilliseconds, soapXml, null));
         }
         catch (HttpRequestException ex)

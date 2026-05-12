@@ -14,7 +14,6 @@ public class UpsertInsurerConfigTests
 
     private static UpsertInsurerConfigCommand BuildCommand(Guid insurerId) => new(
         InsurerId: insurerId,
-        Environment: InsurerEnvironment.Production,
         EndpointUrl: "https://insurer.example.com/ws",
         BusinessNumber: "12345",
         AgentCode: "AGT001",
@@ -23,14 +22,14 @@ public class UpsertInsurerConfigTests
         MaxRetries: 3);
 
     [Fact]
-    public async Task Adds_new_config_when_environment_is_not_yet_configured()
+    public async Task Adds_new_config_when_none_exists_for_insurer()
     {
         var insurer = Insurer.Create(InsurerCode.Gnp, "GNP", 1).Value;
         _insurers
             .Setup(r => r.GetByIdAsync(insurer.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(insurer);
         _configs
-            .Setup(r => r.GetAsync(insurer.Id, InsurerEnvironment.Production, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetAsync(insurer.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync((InsurerConfig?)null);
         _configs
             .Setup(r => r.AddAsync(It.IsAny<InsurerConfig>(), It.IsAny<CancellationToken>()))
@@ -48,18 +47,18 @@ public class UpsertInsurerConfigTests
     }
 
     [Fact]
-    public async Task Updates_existing_config_when_environment_already_present()
+    public async Task Updates_existing_config_when_one_already_present()
     {
         var insurer = Insurer.Create(InsurerCode.Gnp, "GNP", 1).Value;
         var existing = InsurerConfig.Create(
-            insurer.Id, InsurerEnvironment.Production,
+            insurer.Id,
             "https://old.example.com", "old", "old", "kv-old", 10, 1).Value;
 
         _insurers
             .Setup(r => r.GetByIdAsync(insurer.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(insurer);
         _configs
-            .Setup(r => r.GetAsync(insurer.Id, InsurerEnvironment.Production, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetAsync(insurer.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existing);
         _configs
             .Setup(r => r.UpdateAsync(existing, It.IsAny<CancellationToken>()))

@@ -10,7 +10,7 @@ public class QualitasAdapterTests
     private static InsurerQuoteRequest SampleRequest(PackageCode package = PackageCode.Amplia) => new(
         CorrelationId: "corr-q-001",
         Credentials: new InsurerCredentials("75069", "LINEA", "07738"),
-        EnvironmentConfig: new InsurerEnvironmentConfig("http://sio.qualitas.com.mx/WsEmision/WsEmision.asmx", 30, 3),
+        Connection: new InsurerConnectionConfig("http://sio.qualitas.com.mx/WsEmision/WsEmision.asmx", 30, 3),
         Vehicle: new VehicleSelection(2025, "CHEVROLET", "AVEO", "LT", "12345AB"),
         Package: package,
         PackageExternalCode: "1",

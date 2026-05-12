@@ -35,7 +35,7 @@ public static class GnpEmissionExecutor
             sw.Stop();
             return new InsurerEmitOutcome.Failure(new InsurerEmitError(
                 ErrorCategory.InsurerDown, "TIMEOUT",
-                $"GNP emisión no respondió en {request.EnvironmentConfig.TimeoutSeconds}s.",
+                $"GNP emisión no respondió en {request.Connection.TimeoutSeconds}s.",
                 (int)sw.ElapsedMilliseconds, requestXml, null));
         }
         catch (HttpRequestException ex)
@@ -106,7 +106,7 @@ public static class GnpEmissionExecutor
         using var httpReq = new HttpRequestMessage(HttpMethod.Post, endpoint) { Content = content };
         httpReq.Headers.TryAddWithoutValidation("X-Correlation-Id", request.CorrelationId);
 
-        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(request.EnvironmentConfig.TimeoutSeconds));
+        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(request.Connection.TimeoutSeconds));
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
         using var response = await http.SendAsync(httpReq, linked.Token).ConfigureAwait(false);

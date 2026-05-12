@@ -8,7 +8,6 @@ public sealed class InsurerConfig
 
     public Guid Id { get; }
     public Guid InsurerId { get; }
-    public InsurerEnvironment Environment { get; }
     public string EndpointUrl { get; private set; }
     public string BusinessNumber { get; private set; }
     public string AgentCode { get; private set; }
@@ -19,7 +18,6 @@ public sealed class InsurerConfig
     private InsurerConfig(
         Guid id,
         Guid insurerId,
-        InsurerEnvironment environment,
         string endpointUrl,
         string businessNumber,
         string agentCode,
@@ -29,7 +27,6 @@ public sealed class InsurerConfig
     {
         Id = id;
         InsurerId = insurerId;
-        Environment = environment;
         EndpointUrl = endpointUrl;
         BusinessNumber = businessNumber;
         AgentCode = agentCode;
@@ -40,7 +37,6 @@ public sealed class InsurerConfig
 
     public static Result<InsurerConfig> Create(
         Guid insurerId,
-        InsurerEnvironment environment,
         string endpointUrl,
         string businessNumber,
         string agentCode,
@@ -57,7 +53,6 @@ public sealed class InsurerConfig
         return Result<InsurerConfig>.Success(new InsurerConfig(
             Guid.NewGuid(),
             insurerId,
-            environment,
             endpointUrl,
             businessNumber.Trim(),
             agentCode.Trim(),

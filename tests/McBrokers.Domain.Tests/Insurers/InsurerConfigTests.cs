@@ -11,7 +11,6 @@ public class InsurerConfigTests
     {
         var result = InsurerConfig.Create(
             insurerId: AnInsurerId,
-            environment: InsurerEnvironment.Production,
             endpointUrl: "https://insurer.example.com/ws",
             businessNumber: "12345",
             agentCode: "AGT001",
@@ -22,7 +21,6 @@ public class InsurerConfigTests
         result.IsSuccess.Should().BeTrue();
         var cfg = result.Value;
         cfg.InsurerId.Should().Be(AnInsurerId);
-        cfg.Environment.Should().Be(InsurerEnvironment.Production);
         cfg.EndpointUrl.Should().Be("https://insurer.example.com/ws");
         cfg.BusinessNumber.Should().Be("12345");
         cfg.AgentCode.Should().Be("AGT001");
@@ -41,7 +39,7 @@ public class InsurerConfigTests
     public void Create_rejects_invalid_endpoint(string? endpoint)
     {
         var result = InsurerConfig.Create(
-            AnInsurerId, InsurerEnvironment.Production, endpoint!, "1", "A", "kv", 30, 3);
+            AnInsurerId, endpoint!, "1", "A", "kv", 30, 3);
 
         result.IsSuccess.Should().BeFalse();
     }
@@ -53,8 +51,7 @@ public class InsurerConfigTests
     public void Create_rejects_invalid_timeout(int timeout)
     {
         var result = InsurerConfig.Create(
-            AnInsurerId, InsurerEnvironment.Production,
-            "https://x.com", "1", "A", "kv", timeout, 3);
+            AnInsurerId, "https://x.com", "1", "A", "kv", timeout, 3);
 
         result.IsSuccess.Should().BeFalse();
     }
@@ -63,8 +60,7 @@ public class InsurerConfigTests
     public void Create_rejects_negative_retries()
     {
         var result = InsurerConfig.Create(
-            AnInsurerId, InsurerEnvironment.Production,
-            "https://x.com", "1", "A", "kv", 30, maxRetries: -1);
+            AnInsurerId, "https://x.com", "1", "A", "kv", 30, maxRetries: -1);
 
         result.IsSuccess.Should().BeFalse();
     }
@@ -76,8 +72,7 @@ public class InsurerConfigTests
     public void Create_rejects_empty_key_vault_secret_name(string? kvName)
     {
         var result = InsurerConfig.Create(
-            AnInsurerId, InsurerEnvironment.Production,
-            "https://x.com", "1", "A", kvName!, 30, 3);
+            AnInsurerId, "https://x.com", "1", "A", kvName!, 30, 3);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("vault");
@@ -87,7 +82,7 @@ public class InsurerConfigTests
     public void Update_changes_all_mutable_fields()
     {
         var cfg = InsurerConfig.Create(
-            AnInsurerId, InsurerEnvironment.Staging,
+            AnInsurerId,
             "https://old.com", "old-biz", "old-agent", "old-kv", 10, 1).Value;
 
         var result = cfg.Update(
@@ -111,7 +106,7 @@ public class InsurerConfigTests
     public void Update_keeps_previous_state_when_invalid()
     {
         var cfg = InsurerConfig.Create(
-            AnInsurerId, InsurerEnvironment.Production,
+            AnInsurerId,
             "https://ok.com", "1", "A", "kv", 30, 3).Value;
 
         var result = cfg.Update("not-a-url", "1", "A", "kv", 30, 3);

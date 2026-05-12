@@ -15,11 +15,6 @@ public class InsurerConfigConfiguration : IEntityTypeConfiguration<InsurerConfig
 
         builder.Property(c => c.InsurerId).IsRequired();
 
-        builder.Property(c => c.Environment)
-            .HasConversion<string>()
-            .HasMaxLength(20)
-            .IsRequired();
-
         builder.Property(c => c.EndpointUrl).HasMaxLength(2000).IsRequired();
         builder.Property(c => c.BusinessNumber).HasMaxLength(50).IsRequired();
         builder.Property(c => c.AgentCode).HasMaxLength(50).IsRequired();
@@ -27,9 +22,9 @@ public class InsurerConfigConfiguration : IEntityTypeConfiguration<InsurerConfig
         builder.Property(c => c.TimeoutSeconds).IsRequired();
         builder.Property(c => c.MaxRetries).IsRequired();
 
-        builder.HasIndex(c => new { c.InsurerId, c.Environment })
+        builder.HasIndex(c => c.InsurerId)
             .IsUnique()
-            .HasDatabaseName("UX_InsurerConfigs_Insurer_Environment");
+            .HasDatabaseName("UX_InsurerConfigs_Insurer");
 
         builder.HasOne<Insurer>()
             .WithMany()

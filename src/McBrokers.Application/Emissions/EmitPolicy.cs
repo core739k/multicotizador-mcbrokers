@@ -228,8 +228,7 @@ public sealed class EmitPolicy
             .FirstOrDefault(i => i.Id == result.InsurerId);
         if (insurer is null) return Result<EmissionContext>.Failure("Insurer not found.");
 
-        var config = await _configs.GetAsync(insurer.Id, InsurerEnvironment.Production, ct).ConfigureAwait(false)
-                  ?? await _configs.GetAsync(insurer.Id, InsurerEnvironment.Staging, ct).ConfigureAwait(false);
+        var config = await _configs.GetAsync(insurer.Id, ct).ConfigureAwait(false);
         if (config is null) return Result<EmissionContext>.Failure("Insurer configuration not found.");
 
         var creds = await _credentials.ResolveAsync(config.KeyVaultSecretName, ct).ConfigureAwait(false);
@@ -301,7 +300,7 @@ public sealed class EmitPolicy
         return new InsurerEmitRequest(
             CorrelationId: ctx.Quotation.CorrelationId,
             Credentials: new InsurerCredentials(ctx.Credentials.Username, ctx.Credentials.Password, ctx.Config.BusinessNumber),
-            EnvironmentConfig: new InsurerEnvironmentConfig(ctx.Config.EndpointUrl, ctx.Config.TimeoutSeconds, ctx.Config.MaxRetries),
+            Connection: new InsurerConnectionConfig(ctx.Config.EndpointUrl, ctx.Config.TimeoutSeconds, ctx.Config.MaxRetries),
             ExternalQuoteRef: ctx.Result.ExternalQuoteRef ?? string.Empty,
             Vehicle: new EmissionVehicleData(
                 ctx.Vehicle.Year, ctx.Vehicle.Brand, ctx.Vehicle.Model, ctx.Vehicle.Version,
