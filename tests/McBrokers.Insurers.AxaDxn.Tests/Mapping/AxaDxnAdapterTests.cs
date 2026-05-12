@@ -6,9 +6,22 @@ namespace McBrokers.Insurers.AxaDxn.Tests.Mapping;
 
 public class AxaDxnAdapterTests
 {
+    private static readonly AxaDxnAdapterConfig SampleAxa = new(
+        Usuario: "MXS00102308A",
+        Password: "Id9LkOi30nceHCu4qh6F",
+        Tarifa: "RES",
+        TarifaPickup: "PCK",
+        Descuento: 0,
+        DescuentoPickup: 0,
+        MesPolizaDefault: 5,
+        SelectedBusinessName: "Strm",
+        PolizaAutos: "POL000123",
+        PolizaPickup: null,
+        BusinessMes: 5);
+
     private static InsurerQuoteRequest SampleRequest(PackageCode package = PackageCode.Amplia) => new(
         CorrelationId: "corr-ad-001",
-        Credentials: new InsurerCredentials("MXS00102308A", "Id9LkOi30nceHCu4qh6F", "POL000123"),
+        Credentials: new InsurerCredentials("ignored", "ignored", null),
         Connection: new InsurerConnectionConfig(
             "https://serviciosweb.axa.com.mx:9104/WSFlotillas/services/FlotillasService", 50, 3),
         Vehicle: new VehicleSelection(2025, "CHEVROLET", "AVEO", "LT", "01112233"),
@@ -20,12 +33,13 @@ public class AxaDxnAdapterTests
         Deductibles: new DeductiblesAndSums(5m, 10m, 200000m, 3000000m),
         Contractor: new ContactInfo("Esteban", "Contreras", "Perez", "06700", Gender.Male, new DateOnly(1990, 1, 15)),
         HabitualDriver: new DriverInfo("06700", Gender.Male, new DateOnly(1990, 1, 15)),
-        PostalCode: "06700");
+        PostalCode: "06700",
+        BusinessConfig: SampleAxa);
 
     [Fact]
     public void Soap_envelope_contains_CotizarIncisoRequest_with_flotillas_namespace()
     {
-        var soap = AxaDxnRequestBuilder.BuildSoapEnvelope(SampleRequest(), new DateOnly(2026, 5, 11));
+        var soap = AxaDxnRequestBuilder.BuildSoapEnvelope(SampleRequest(), SampleAxa, new DateOnly(2026, 5, 11));
 
         soap.Should().Contain("CotizarIncisoRequest");
         soap.Should().Contain(AxaDxnRequestBuilder.FlotillasNamespace);
@@ -46,9 +60,9 @@ public class AxaDxnAdapterTests
     [Fact]
     public void Body_includes_DM_only_for_AMPLIA()
     {
-        var amplia = AxaDxnRequestBuilder.BuildSoapEnvelope(SampleRequest(PackageCode.Amplia), new DateOnly(2026, 5, 11));
-        var limitada = AxaDxnRequestBuilder.BuildSoapEnvelope(SampleRequest(PackageCode.Limitada), new DateOnly(2026, 5, 11));
-        var rc = AxaDxnRequestBuilder.BuildSoapEnvelope(SampleRequest(PackageCode.ResponsabilidadCivil), new DateOnly(2026, 5, 11));
+        var amplia = AxaDxnRequestBuilder.BuildSoapEnvelope(SampleRequest(PackageCode.Amplia), SampleAxa, new DateOnly(2026, 5, 11));
+        var limitada = AxaDxnRequestBuilder.BuildSoapEnvelope(SampleRequest(PackageCode.Limitada), SampleAxa, new DateOnly(2026, 5, 11));
+        var rc = AxaDxnRequestBuilder.BuildSoapEnvelope(SampleRequest(PackageCode.ResponsabilidadCivil), SampleAxa, new DateOnly(2026, 5, 11));
 
         amplia.Should().Contain("<claveCobertura>DM</claveCobertura>");
         amplia.Should().Contain("<claveCobertura>RT</claveCobertura>");

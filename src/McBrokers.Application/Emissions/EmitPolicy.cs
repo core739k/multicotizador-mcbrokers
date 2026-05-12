@@ -2,6 +2,7 @@ using McBrokers.Application.Ports;
 using McBrokers.Application.Quotations;
 using McBrokers.Domain.Emissions;
 using McBrokers.Domain.Insurers;
+using McBrokers.Domain.Insurers.AxaDxn;
 using McBrokers.Domain.Quotations;
 using McBrokers.Insurers.Abstractions;
 using McBrokers.SharedKernel;
@@ -41,6 +42,7 @@ public sealed class EmitPolicy
     private readonly IInsurerRepository _insurers;
     private readonly IInsurerConfigRepository _configs;
     private readonly IInsurerCredentialProvider _credentials;
+    private readonly IAxaDxnConfigRepository _axaDxnConfigs;
     private readonly IBlobStore _blob;
     private readonly IPdfDownloader _pdfDownloader;
     private readonly IEnumerable<IInsurerAdapter> _adapters;
@@ -57,6 +59,7 @@ public sealed class EmitPolicy
         IInsurerRepository insurers,
         IInsurerConfigRepository configs,
         IInsurerCredentialProvider credentials,
+        IAxaDxnConfigRepository axaDxnConfigs,
         IBlobStore blob,
         IPdfDownloader pdfDownloader,
         IEnumerable<IInsurerAdapter> adapters,
@@ -72,6 +75,7 @@ public sealed class EmitPolicy
         _insurers = insurers;
         _configs = configs;
         _credentials = credentials;
+        _axaDxnConfigs = axaDxnConfigs;
         _blob = blob;
         _pdfDownloader = pdfDownloader;
         _adapters = adapters;
@@ -246,10 +250,35 @@ public sealed class EmitPolicy
             return Result<EmissionContext>.Failure("No vehicle-insurer mapping for this insurer.");
         }
 
+        // POC AXA DXN: construir el typed business config para que la emisión vía COPSIS
+        // tenga acceso a póliza/tarifa/mes. Otras aseguradoras no usan BusinessConfig todavía.
+        InsurerBusinessConfig? businessConfig = null;
+        if (insurer.Code == InsurerCode.AxaDxn)
+        {
+            var snapshot = await _axaDxnConfigs.GetByInsurerIdAsync(insurer.Id, ct).ConfigureAwait(false);
+            if (snapshot is not null)
+            {
+                var business = snapshot.Businesses.FirstOrDefault(b => !string.IsNullOrWhiteSpace(b.PolizaAutos))
+                            ?? snapshot.Businesses.FirstOrDefault();
+                businessConfig = new AxaDxnAdapterConfig(
+                    Usuario: snapshot.Config.Usuario,
+                    Password: snapshot.Config.Password,
+                    Tarifa: snapshot.Config.Tarifa,
+                    TarifaPickup: snapshot.Config.TarifaPickup,
+                    Descuento: snapshot.Config.Descuento,
+                    DescuentoPickup: snapshot.Config.DescuentoPickup,
+                    MesPolizaDefault: snapshot.Config.MesPolizaDefault,
+                    SelectedBusinessName: business?.Nombre.ToString() ?? string.Empty,
+                    PolizaAutos: business?.PolizaAutos,
+                    PolizaPickup: business?.PolizaPickup,
+                    BusinessMes: business?.Mes ?? snapshot.Config.MesPolizaDefault);
+            }
+        }
+
         return Result<EmissionContext>.Success(new EmissionContext(
             quotation, result, vehicle, insurer, config,
             new InsurerCredentialPair_Adapter(creds.Username, creds.Password),
-            adapter, insurerMapping.ExternalClave));
+            adapter, insurerMapping.ExternalClave, businessConfig));
     }
 
     // F5 placeholder: localiza la quotation que contiene el result.
@@ -313,7 +342,8 @@ public sealed class EmitPolicy
             PremiumTotal: ctx.Result.PremiumTotal ?? 0m,
             PremiumNet: ctx.Result.PremiumNet ?? 0m,
             Tax: ctx.Result.Tax ?? 0m,
-            Fees: ctx.Result.Fees ?? 0m);
+            Fees: ctx.Result.Fees ?? 0m,
+            BusinessConfig: ctx.BusinessConfig);
     }
 
     private sealed record EmissionContext(
@@ -324,7 +354,8 @@ public sealed class EmitPolicy
         InsurerConfig Config,
         InsurerCredentialPair_Adapter Credentials,
         IInsurerAdapter Adapter,
-        string ExternalClave);
+        string ExternalClave,
+        InsurerBusinessConfig? BusinessConfig);
 
     private sealed record InsurerCredentialPair_Adapter(string Username, string Password);
 }

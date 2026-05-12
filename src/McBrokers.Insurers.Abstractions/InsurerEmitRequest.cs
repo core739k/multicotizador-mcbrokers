@@ -11,7 +11,8 @@ public sealed record InsurerEmitRequest(
     decimal PremiumTotal,
     decimal PremiumNet,
     decimal Tax,
-    decimal Fees);
+    decimal Fees,
+    InsurerBusinessConfig? BusinessConfig = null);
 
 public sealed record EmissionVehicleData(
     int Year,

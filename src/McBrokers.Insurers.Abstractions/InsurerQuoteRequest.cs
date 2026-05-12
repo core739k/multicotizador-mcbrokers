@@ -15,7 +15,8 @@ public sealed record InsurerQuoteRequest(
     DeductiblesAndSums Deductibles,
     ContactInfo Contractor,
     DriverInfo HabitualDriver,
-    string PostalCode);
+    string PostalCode,
+    InsurerBusinessConfig? BusinessConfig = null);
 
 public sealed record InsurerCredentials(string Username, string Password, string? BusinessUnit);
 

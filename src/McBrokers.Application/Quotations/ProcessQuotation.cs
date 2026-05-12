@@ -1,6 +1,7 @@
 using McBrokers.Application.Ports;
 using McBrokers.Domain.Catalog;
 using McBrokers.Domain.Insurers;
+using McBrokers.Domain.Insurers.AxaDxn;
 using McBrokers.Domain.Quotations;
 using McBrokers.Insurers.Abstractions;
 
@@ -20,6 +21,7 @@ public sealed class ProcessQuotation
     private readonly IInsurerConfigRepository _configs;
     private readonly IInsurerPackageMappingRepository _packageMappings;
     private readonly IInsurerCredentialProvider _credentials;
+    private readonly IAxaDxnConfigRepository _axaDxnConfigs;
     private readonly IBlobStore _blob;
     private readonly IEnumerable<IInsurerAdapter> _adapters;
     private readonly IClock _clock;
@@ -33,6 +35,7 @@ public sealed class ProcessQuotation
         IInsurerConfigRepository configs,
         IInsurerPackageMappingRepository packageMappings,
         IInsurerCredentialProvider credentials,
+        IAxaDxnConfigRepository axaDxnConfigs,
         IBlobStore blob,
         IEnumerable<IInsurerAdapter> adapters,
         IClock clock,
@@ -45,6 +48,7 @@ public sealed class ProcessQuotation
         _configs = configs;
         _packageMappings = packageMappings;
         _credentials = credentials;
+        _axaDxnConfigs = axaDxnConfigs;
         _blob = blob;
         _adapters = adapters;
         _clock = clock;
@@ -122,6 +126,30 @@ public sealed class ProcessQuotation
 
         var customer = ParseCustomerSnapshot(quotation.CustomerSnapshotJson);
 
+        // POC AXA DXN: para esta aseguradora cargamos AxaDxnConfig + business resuelto y
+        // lo pasamos como BusinessConfig tipado. Las otras 3 aseguradoras siguen el camino
+        // viejo de Credentials hasta que se expanda el patrón.
+        InsurerBusinessConfig? businessConfig = null;
+        if (insurer.Code == InsurerCode.AxaDxn)
+        {
+            businessConfig = await BuildAxaDxnBusinessConfigAsync(insurer.Id, cancellationToken)
+                .ConfigureAwait(false);
+            if (businessConfig is null)
+            {
+                var notConfigured = QuotationInsurerResult.FailedResult(
+                    quotation.Id, insurer.Id,
+                    QuotationInsurerStatus.Failed, ErrorCategory.Technical,
+                    "NO_CONFIG",
+                    "AXA DXN no tiene AxaDxnConfig capturado. Completa /Admin/Insurers/{id}.",
+                    latencyMs: 0, requestBlobRef: null, responseBlobRef: null,
+                    createdAt: _clock.UtcNow).Value;
+                quotation.RecordResult(notConfigured);
+                await _quotations.AppendResultAsync(notConfigured, cancellationToken).ConfigureAwait(false);
+                await _quotations.UpdateAsync(quotation, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+        }
+
         var insurerRequest = new InsurerQuoteRequest(
             CorrelationId: quotation.CorrelationId,
             Credentials: new InsurerCredentials(creds.Username, creds.Password, config.BusinessNumber),
@@ -135,7 +163,8 @@ public sealed class ProcessQuotation
             Deductibles: customer.Deductibles,
             Contractor: customer.Contractor,
             HabitualDriver: customer.HabitualDriver,
-            PostalCode: quotation.PostalCode);
+            PostalCode: quotation.PostalCode,
+            BusinessConfig: businessConfig);
 
         var outcome = await adapter.QuoteAsync(insurerRequest, cancellationToken).ConfigureAwait(false);
 
@@ -174,6 +203,33 @@ public sealed class ProcessQuotation
         quotation.RecordResult(result);
         await _quotations.AppendResultAsync(result, cancellationToken).ConfigureAwait(false);
         await _quotations.UpdateAsync(quotation, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<AxaDxnAdapterConfig?> BuildAxaDxnBusinessConfigAsync(
+        Guid insurerId, CancellationToken cancellationToken)
+    {
+        var snapshot = await _axaDxnConfigs.GetByInsurerIdAsync(insurerId, cancellationToken)
+            .ConfigureAwait(false);
+        if (snapshot is null) return null;
+
+        // POC: el vendedor todavía no selecciona negocio al cotizar (futuro Quotation.SelectedBusiness).
+        // Mientras tanto, elegimos el primer negocio que tenga PolizaAutos. Si ninguno tiene póliza,
+        // tomamos el primero existente y dejamos PolizaAutos en null — el adapter falla con NO_POLIZA.
+        var business = snapshot.Businesses.FirstOrDefault(b => !string.IsNullOrWhiteSpace(b.PolizaAutos))
+                    ?? snapshot.Businesses.FirstOrDefault();
+
+        return new AxaDxnAdapterConfig(
+            Usuario: snapshot.Config.Usuario,
+            Password: snapshot.Config.Password,
+            Tarifa: snapshot.Config.Tarifa,
+            TarifaPickup: snapshot.Config.TarifaPickup,
+            Descuento: snapshot.Config.Descuento,
+            DescuentoPickup: snapshot.Config.DescuentoPickup,
+            MesPolizaDefault: snapshot.Config.MesPolizaDefault,
+            SelectedBusinessName: business?.Nombre.ToString() ?? string.Empty,
+            PolizaAutos: business?.PolizaAutos,
+            PolizaPickup: business?.PolizaPickup,
+            BusinessMes: business?.Mes ?? snapshot.Config.MesPolizaDefault);
     }
 
     private async Task<(string? RequestRef, string? ResponseRef)> PersistBlobsAsync(

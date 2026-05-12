@@ -1,8 +1,12 @@
 @page "{id:guid}"
 @model McBrokers.Web.Pages.Admin.Insurers.EditModel
+@using McBrokers.Domain.Insurers
+@using McBrokers.Domain.Insurers.AxaDxn
 @using McBrokers.Domain.Quotations
 @{
     ViewData["Title"] = $"Aseguradora: {Model.Detail.Insurer.Name}";
+    var isTechnical = User.HasClaim("mcb:is-technical", "true");
+    var isAxaDxn = Model.Detail.Insurer.Code == InsurerCode.AxaDxn;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -56,7 +60,6 @@
         <h4>Códigos de paquete (CVE_PAQUETE)</h4>
         <p class="text-muted small">
             Mapeo del paquete interno al código que espera la aseguradora.
-            Necesario para que las cotizaciones se envíen con éxito.
         </p>
         @foreach (var pkg in Enum.GetValues<PackageCode>())
         {
@@ -76,40 +79,165 @@
                 <button type="submit" class="btn btn-sm btn-outline-primary">Guardar</button>
             </form>
         }
+    </div>
+</div>
 
-        <hr class="my-4" />
+@if (isAxaDxn)
+{
+    var axa = Model.AxaDxn;
+    <hr class="my-4" />
+    <h3>Configuración AXA DXN</h3>
+    <p class="text-muted small">
+        Datos específicos de AXA DXN. La contraseña se almacena cifrada en BD
+        (ASP.NET Core DataProtection); el resto en texto plano.
+    </p>
 
-        <h4>Configuración de conexión</h4>
-        <p class="text-muted small">
-            MCBrokers usa las mismas credenciales productivas para pruebas — se avisa a la aseguradora
-            cuando son cotizaciones de prueba. Por eso solo hay una configuración por aseguradora.
-        </p>
-        @{
-            var cfg = Model.Detail.Config;
-        }
-        <div class="card mb-3">
-            <div class="card-body">
-                <form method="post" asp-page-handler="Config">
-                    <input type="hidden" name="ConfigInput.InsurerId" value="@Model.Detail.Insurer.Id" />
+    <div class="row">
+        <div class="col-md-6">
+            <h5>Datos principales</h5>
+            <form method="post" asp-page-handler="AxaDxnConfig">
+                <input type="hidden" name="AxaDxnConfigInput.InsurerId" value="@Model.Detail.Insurer.Id" />
 
+                <div class="mb-2">
+                    <label class="form-label small">Usuario</label>
+                    <input class="form-control form-control-sm" name="AxaDxnConfigInput.Usuario"
+                           value="@axa?.Usuario" required maxlength="100" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">Contraseña</label>
+                    <input type="password" class="form-control form-control-sm" name="AxaDxnConfigInput.Password"
+                           placeholder="@(axa is null ? "" : "•••••• (re-captura para sobrescribir)")" required />
+                    <div class="form-text">La contraseña previa no se muestra. Se sobrescribe en cada guardado.</div>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col">
+                        <label class="form-label small">Tarifa (autos)</label>
+                        <input class="form-control form-control-sm" name="AxaDxnConfigInput.Tarifa"
+                               value="@axa?.Tarifa" required />
+                    </div>
+                    <div class="col">
+                        <label class="form-label small">Tarifa Pickup</label>
+                        <input class="form-control form-control-sm" name="AxaDxnConfigInput.TarifaPickup"
+                               value="@axa?.TarifaPickup" required />
+                    </div>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col">
+                        <label class="form-label small">Descuento (0..99)</label>
+                        <input type="number" min="0" max="99" class="form-control form-control-sm"
+                               name="AxaDxnConfigInput.Descuento" value="@(axa?.Descuento ?? 0)" required />
+                    </div>
+                    <div class="col">
+                        <label class="form-label small">Descuento Pickup (0..99)</label>
+                        <input type="number" min="0" max="99" class="form-control form-control-sm"
+                               name="AxaDxnConfigInput.DescuentoPickup" value="@(axa?.DescuentoPickup ?? 0)" required />
+                    </div>
+                    <div class="col">
+                        <label class="form-label small">Mes Póliza (default)</label>
+                        <select class="form-select form-select-sm" name="AxaDxnConfigInput.MesPolizaDefault" required>
+                            @for (var m = 1; m <= 12; m++)
+                            {
+                                var selected = (axa?.MesPolizaDefault ?? DateTime.UtcNow.Month) == m;
+                                <option value="@m" selected="@(selected ? "selected" : null)">@m</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-sm btn-primary">Guardar datos principales</button>
+            </form>
+        </div>
+
+        <div class="col-md-6">
+            <h5>Negocios</h5>
+            <p class="text-muted small">
+                Cada negocio tiene su póliza de autos y de pickup. Solo STRM tiene valores reales por ahora;
+                los demás pueden quedar vacíos.
+            </p>
+            @if (axa is null)
+            {
+                <div class="alert alert-warning small">
+                    Guarda primero los datos principales antes de capturar negocios.
+                </div>
+            }
+            else
+            {
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Póliza Autos</th>
+                            <th>Póliza Pickup</th>
+                            <th style="width:70px;">Mes</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var name in Enum.GetValues<AxaDxnBusinessName>())
+                        {
+                            var existing = axa.Businesses.FirstOrDefault(b => b.Nombre == name);
+                            <tr>
+                                <form method="post" asp-page-handler="AxaDxnBusiness">
+                                    <input type="hidden" name="AxaDxnBusinessInput.InsurerId" value="@Model.Detail.Insurer.Id" />
+                                    <input type="hidden" name="AxaDxnBusinessInput.Nombre" value="@name" />
+                                    <td><strong>@name</strong></td>
+                                    <td>
+                                        <input class="form-control form-control-sm" name="AxaDxnBusinessInput.PolizaAutos"
+                                               value="@existing?.PolizaAutos" placeholder="(vacío)" />
+                                    </td>
+                                    <td>
+                                        <input class="form-control form-control-sm" name="AxaDxnBusinessInput.PolizaPickup"
+                                               value="@existing?.PolizaPickup" placeholder="(vacío)" />
+                                    </td>
+                                    <td>
+                                        <select class="form-select form-select-sm" name="AxaDxnBusinessInput.Mes">
+                                            @for (var m = 1; m <= 12; m++)
+                                            {
+                                                var selected = (existing?.Mes ?? 1) == m;
+                                                <option value="@m" selected="@(selected ? "selected" : null)">@m</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td><button type="submit" class="btn btn-sm btn-outline-primary">Guardar</button></td>
+                                </form>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+}
+else
+{
+    @* Para las otras 3 aseguradoras, mantener temporalmente la config genérica
+       hasta que el patrón de la opción A se expanda a Quálitas / GNP / ANA. *@
+    var cfg = Model.Detail.Config;
+    <hr class="my-4" />
+    <h4>Configuración (legacy genérico — pendiente de migrar al patrón por aseguradora)</h4>
+    <div class="card mb-3" style="max-width: 600px;">
+        <div class="card-body">
+            <form method="post" asp-page-handler="Config">
+                <input type="hidden" name="ConfigInput.InsurerId" value="@Model.Detail.Insurer.Id" />
+                <div class="row g-2 mb-2">
+                    <div class="col">
+                        <label class="form-label small">Número de negocio</label>
+                        <input class="form-control form-control-sm" name="ConfigInput.BusinessNumber" value="@cfg?.BusinessNumber" required />
+                    </div>
+                    <div class="col">
+                        <label class="form-label small">Código de agente</label>
+                        <input class="form-control form-control-sm" name="ConfigInput.AgentCode" value="@cfg?.AgentCode" required />
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">Nombre del secreto en Key Vault</label>
+                    <input class="form-control form-control-sm" name="ConfigInput.KeyVaultSecretName" value="@cfg?.KeyVaultSecretName" required />
+                </div>
+                @if (isTechnical)
+                {
                     <div class="mb-2">
                         <label class="form-label small">URL del endpoint (https)</label>
                         <input class="form-control form-control-sm" name="ConfigInput.EndpointUrl" value="@cfg?.EndpointUrl" required />
-                    </div>
-                    <div class="row g-2 mb-2">
-                        <div class="col">
-                            <label class="form-label small">Número de negocio</label>
-                            <input class="form-control form-control-sm" name="ConfigInput.BusinessNumber" value="@cfg?.BusinessNumber" required />
-                        </div>
-                        <div class="col">
-                            <label class="form-label small">Código de agente</label>
-                            <input class="form-control form-control-sm" name="ConfigInput.AgentCode" value="@cfg?.AgentCode" required />
-                        </div>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label small">Nombre del secreto en Key Vault</label>
-                        <input class="form-control form-control-sm" name="ConfigInput.KeyVaultSecretName" value="@cfg?.KeyVaultSecretName" required />
-                        <div class="form-text">Los secretos en sí viven en Key Vault, aquí solo el nombre.</div>
                     </div>
                     <div class="row g-2 mb-2">
                         <div class="col">
@@ -121,10 +249,56 @@
                             <input type="number" min="0" class="form-control form-control-sm" name="ConfigInput.MaxRetries" value="@(cfg?.MaxRetries ?? 3)" required />
                         </div>
                     </div>
-
-                    <button type="submit" class="btn btn-sm btn-primary">Guardar</button>
-                </form>
-            </div>
+                }
+                else
+                {
+                    <input type="hidden" name="ConfigInput.EndpointUrl" value="@cfg?.EndpointUrl" />
+                    <input type="hidden" name="ConfigInput.TimeoutSeconds" value="@(cfg?.TimeoutSeconds ?? 30)" />
+                    <input type="hidden" name="ConfigInput.MaxRetries" value="@(cfg?.MaxRetries ?? 3)" />
+                }
+                <button type="submit" class="btn btn-sm btn-primary">Guardar</button>
+            </form>
         </div>
     </div>
-</div>
+}
+
+@if (isTechnical && isAxaDxn)
+{
+    var techCfg = Model.Detail.Config;
+    <hr class="my-4" />
+    <details>
+        <summary><h4 class="d-inline">Configuración técnica</h4> <span class="text-muted small">(solo admin técnico)</span></summary>
+        <p class="text-muted small mt-2">
+            URL del endpoint y resiliencia. Solo visible para admin técnico.
+        </p>
+        <form method="post" asp-page-handler="Config" class="mt-2" style="max-width: 600px;">
+            <input type="hidden" name="ConfigInput.InsurerId" value="@Model.Detail.Insurer.Id" />
+            @* Para AXA DXN los siguientes 3 campos no se usan en el adapter (los reemplaza
+               AxaDxnConfig), pero el InsurerConfig genérico requiere valores no vacíos.
+               Mandamos placeholders inocuos. *@
+            <input type="hidden" name="ConfigInput.BusinessNumber" value="@(techCfg?.BusinessNumber ?? "n/a-axa-dxn")" />
+            <input type="hidden" name="ConfigInput.AgentCode" value="@(techCfg?.AgentCode ?? "n/a-axa-dxn")" />
+            <input type="hidden" name="ConfigInput.KeyVaultSecretName" value="@(techCfg?.KeyVaultSecretName ?? "n/a-axa-dxn")" />
+
+            <div class="mb-2">
+                <label class="form-label small">URL del endpoint (https)</label>
+                <input class="form-control form-control-sm" name="ConfigInput.EndpointUrl"
+                       value="@techCfg?.EndpointUrl"
+                       placeholder="https://serviciosweb.axa.com.mx:9104/WSFlotillas/services/FlotillasService" required />
+            </div>
+            <div class="row g-2 mb-2">
+                <div class="col">
+                    <label class="form-label small">Tiempo de espera (s)</label>
+                    <input type="number" min="1" max="600" class="form-control form-control-sm"
+                           name="ConfigInput.TimeoutSeconds" value="@(techCfg?.TimeoutSeconds ?? 50)" required />
+                </div>
+                <div class="col">
+                    <label class="form-label small">Reintentos máximos</label>
+                    <input type="number" min="0" class="form-control form-control-sm"
+                           name="ConfigInput.MaxRetries" value="@(techCfg?.MaxRetries ?? 3)" required />
+                </div>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">Guardar técnica</button>
+        </form>
+    </details>
+}

@@ -15,14 +15,14 @@ public static class AxaDxnRequestBuilder
 {
     public const string FlotillasNamespace = "http://axa.com.mx/autos/flotillas/ws";
 
-    public static string BuildSoapEnvelope(InsurerQuoteRequest req, DateOnly today)
+    public static string BuildSoapEnvelope(InsurerQuoteRequest req, AxaDxnAdapterConfig axa, DateOnly today)
     {
         XNamespace ws = FlotillasNamespace;
         var body = new XElement(ws + "CotizarIncisoRequest",
             new XElement("datosSolicitud",
-                BuildDatosPoliza(req, today),
+                BuildDatosPoliza(req, axa, today),
                 BuildDatosVehiculo(req, today),
-                BuildDatosCoberturas(req)));
+                BuildDatosCoberturas(req, axa)));
 
         return SoapEnvelope.Wrap(SoapVersion.Soap11, body);
     }
@@ -50,11 +50,14 @@ public static class AxaDxnRequestBuilder
         _ => "100",
     };
 
-    private static XElement BuildDatosPoliza(InsurerQuoteRequest req, DateOnly today) =>
+    private static XElement BuildDatosPoliza(InsurerQuoteRequest req, AxaDxnAdapterConfig axa, DateOnly today) =>
         new("datosPoliza",
-            new XElement("numeroPoliza", req.Credentials.BusinessUnit ?? string.Empty),
+            // numeroPoliza viene del negocio seleccionado (STRM/CAJA/MCB/...) — autos por default.
+            // Si el vehículo fuera pickup el ProcessQuotation debería pasar PolizaPickup;
+            // por simplicidad de POC usamos PolizaAutos y fallback a vacío.
+            new XElement("numeroPoliza", axa.PolizaAutos ?? string.Empty),
             new XElement("vigenciaDesde", today.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)),
-            new XElement("porcentajeDescuento", "0"),
+            new XElement("porcentajeDescuento", axa.Descuento.ToString(CultureInfo.InvariantCulture)),
             new XElement("tipoNegocio", "Normal"),
             new XElement("modoPago", "Efectivo"),
             new XElement("miembroDesde", "0"));
@@ -79,7 +82,7 @@ public static class AxaDxnRequestBuilder
             new XElement("codigoPostal", req.PostalCode));
     }
 
-    private static XElement BuildDatosCoberturas(InsurerQuoteRequest req)
+    private static XElement BuildDatosCoberturas(InsurerQuoteRequest req, AxaDxnAdapterConfig axa)
     {
         var sumaVF = FormatMoney(req.SumInsured);
         var tipoValor = MapValuationDescriptor(req.ValuationType);

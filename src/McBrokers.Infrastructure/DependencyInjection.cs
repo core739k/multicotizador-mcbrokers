@@ -100,6 +100,7 @@ public static class DependencyInjection
         services.AddScoped<IAnaPostalCodeResolver, AnaPostalCodeResolver>();
         services.AddHttpClient<AxaColQuoteAdapter>().AddMcBrokersResilience();
         services.AddHttpClient<AxaDxnQuoteAdapter>().AddMcBrokersResilience();
+        services.AddHttpClient<McBrokers.Insurers.AxaDxn.Mapping.AxaDxnEmissionExecutor>().AddMcBrokersResilience();
         services.AddScoped<IInsurerAdapter, GnpQuoteAdapter>();
         services.AddScoped<IInsurerAdapter, QualitasQuoteAdapter>();
         services.AddScoped<IInsurerAdapter, AnaQuoteAdapter>();
