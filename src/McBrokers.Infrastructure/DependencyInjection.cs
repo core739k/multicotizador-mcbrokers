@@ -46,6 +46,7 @@ public static class DependencyInjection
         services.AddScoped<IAgentRepository, AgentRepository>();
         services.AddScoped<IInsurerRepository, InsurerRepository>();
         services.AddScoped<IInsurerConfigRepository, InsurerConfigRepository>();
+        services.AddScoped<IAxaDxnConfigRepository, AxaDxnConfigRepository>();
         services.AddScoped<IVehicleMasterRepository, VehicleMasterRepository>();
         services.AddScoped<IVehicleInsurerMappingRepository, VehicleInsurerMappingRepository>();
         services.AddScoped<ICatalogImportBatchRepository, CatalogImportBatchRepository>();
@@ -120,6 +121,9 @@ public static class DependencyInjection
         services.AddScoped<UpdateInsurer>();
         services.AddScoped<UpsertInsurerConfig>();
         services.AddScoped<UpsertInsurerPackageMapping>();
+        services.AddScoped<UpsertAxaDxnConfig>();
+        services.AddScoped<UpsertAxaDxnBusiness>();
+        services.AddScoped<GetAxaDxnConfig>();
         services.AddScoped<ListInsurers>();
         services.AddScoped<GetInsurer>();
         services.AddScoped<ListAgents>();
@@ -133,6 +137,13 @@ public static class DependencyInjection
         services.AddScoped<GetQuotationStatus>();
         services.AddScoped<ProcessQuotation>();
         services.AddScoped<McBrokers.Application.Emissions.EmitPolicy>();
+
+        // DataProtection — keyring local en %LOCALAPPDATA%\ASP.NET\DataProtection-Keys.
+        // Para prod en Azure: PersistKeysToAzureBlobStorage + ProtectKeysWithAzureKeyVault.
+        // ApplicationName se hereda del IHostEnvironment (default: el nombre del exe);
+        // si cambia entre Api/Web el keyring podría no compartirse — F1.K validará el caso.
+        services.AddDataProtection();
+        services.AddSingleton<IPasswordProtector, McBrokers.Infrastructure.Encryption.DataProtectionPasswordProtector>();
 
         services.AddMcBrokersGoogleAuthentication(configuration);
         services.AddAuthorization(options =>
