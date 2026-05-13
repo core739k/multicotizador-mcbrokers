@@ -28,43 +28,71 @@ else
     }
     else
     {
-        <div class="row">
-            @foreach (var r in Model.View.Results)
-            {
-                <div class="col-md-6 mb-3">
-                    <div class="card h-100 @(r.Status == QuotationInsurerStatus.Succeeded ? "border-success" : "border-danger")">
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                Aseguradora <small class="text-muted">@r.InsurerId.ToString().Substring(0, 8)</small>
-                                <span class="badge bg-@StatusColor(r.Status)">@r.Status</span>
-                            </h5>
-                            @if (r.Status == QuotationInsurerStatus.Succeeded)
-                            {
-                                <table class="table table-sm mb-0">
-                                    <tr><td>Prima total</td><td class="text-end"><strong>$@r.PremiumTotal?.ToString("N2")</strong></td></tr>
-                                    <tr><td>Prima neta</td><td class="text-end">$@r.PremiumNet?.ToString("N2")</td></tr>
-                                    <tr><td>IVA</td><td class="text-end">$@r.Tax?.ToString("N2")</td></tr>
-                                    <tr><td>Derechos</td><td class="text-end">$@r.Fees?.ToString("N2")</td></tr>
-                                </table>
-                                <small class="text-muted d-block mt-2 mb-2">
-                                    Ref: <code>@r.ExternalQuoteRef</code> · @r.LatencyMs ms
-                                </small>
-                                <a class="btn btn-sm btn-success" asp-page="/Emision/Index" asp-route-resultId="@r.Id">
-                                    Emitir póliza
-                                </a>
-                            }
-                            else
-                            {
-                                <p class="text-muted small mb-1">
-                                    <strong>@r.ErrorCategory</strong> — <code>@r.ErrorCode</code>
-                                </p>
-                                <p class="mb-0">@r.ErrorMessage</p>
-                            }
-                        </div>
+        @* Tarjetas horizontales — una por aseguradora, columnas: Prima · Versión · Valor · DM% · RT% · RC · GMO. *@
+        @foreach (var r in Model.View.Results)
+        {
+            <div class="card mb-3 @(r.Status == QuotationInsurerStatus.Succeeded ? "border-success" : "border-danger")">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">
+                            Aseguradora <small class="text-muted">@r.InsurerId.ToString().Substring(0, 8)</small>
+                            <span class="badge bg-@StatusColor(r.Status) ms-2">@r.Status</span>
+                        </h5>
+                        @if (r.Status == QuotationInsurerStatus.Succeeded)
+                        {
+                            <a class="btn btn-sm btn-success" asp-page="/Emision/Index" asp-route-resultId="@r.Id">
+                                Emitir póliza
+                            </a>
+                        }
                     </div>
+
+                    @if (r.Status == QuotationInsurerStatus.Succeeded)
+                    {
+                        <div class="row text-center gx-2">
+                            <div class="col">
+                                <div class="text-muted small">Prima total</div>
+                                <div class="fw-bold fs-5">$@r.PremiumTotal?.ToString("N2")</div>
+                            </div>
+                            <div class="col">
+                                <div class="text-muted small">Versión</div>
+                                <div>@(Model.View.Vehicle?.Version ?? "—")</div>
+                            </div>
+                            <div class="col">
+                                <div class="text-muted small">Valor estimado</div>
+                                <div>$@Model.View.SumInsured.ToString("N0")</div>
+                            </div>
+                            <div class="col">
+                                <div class="text-muted small">DM</div>
+                                <div>@FormatPercent(Model.View.Deducibles?.MaterialDamagesDeductiblePct)</div>
+                            </div>
+                            <div class="col">
+                                <div class="text-muted small">RT</div>
+                                <div>@FormatPercent(Model.View.Deducibles?.RobberyDeductiblePct)</div>
+                            </div>
+                            <div class="col">
+                                <div class="text-muted small">RC</div>
+                                <div>@FormatMoney(Model.View.Deducibles?.CivilLiabilitySumInsured)</div>
+                            </div>
+                            <div class="col">
+                                <div class="text-muted small">GMO</div>
+                                <div>@FormatMoney(Model.View.Deducibles?.MedicalExpensesSumInsured)</div>
+                            </div>
+                        </div>
+                        <div class="text-muted small mt-2">
+                            Ref: <code>@r.ExternalQuoteRef</code> · @r.LatencyMs ms ·
+                            Prima neta $@r.PremiumNet?.ToString("N2") · IVA $@r.Tax?.ToString("N2") · Derechos $@r.Fees?.ToString("N2")
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted small mb-1">
+                            <strong>@r.ErrorCategory</strong> — <code>@r.ErrorCode</code>
+                        </p>
+                        <p class="mb-0">@r.ErrorMessage</p>
+                    }
                 </div>
-            }
-        </div>
+            </div>
+        }
     }
 }
 
@@ -94,4 +122,10 @@ else
         QuotationInsurerStatus.NotCovered => "secondary",
         _ => "danger",
     };
+
+    private static string FormatPercent(decimal? value) =>
+        value is null ? "—" : $"{value.Value:0.##}%";
+
+    private static string FormatMoney(decimal? value) =>
+        value is null ? "—" : $"${value.Value:N0}";
 }

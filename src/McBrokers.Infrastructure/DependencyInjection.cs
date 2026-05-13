@@ -140,6 +140,8 @@ public static class DependencyInjection
         services.AddScoped<ListPendingMappings>();
         services.AddScoped<SearchVehiclesByText>();
         services.AddScoped<RequestQuotation>();
+        // GetQuotationStatus depende ahora de IVehicleMasterRepository
+        // para enriquecer el view con datos del vehículo.
         services.AddScoped<GetQuotationStatus>();
         services.AddScoped<ProcessQuotation>();
         services.AddScoped<McBrokers.Application.Emissions.EmitPolicy>();
