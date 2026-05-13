@@ -47,6 +47,7 @@ public class AxaColAdapterTests
     [InlineData(PaymentMode.Semestral, "SEMESTRAL")]
     [InlineData(PaymentMode.Trimestral, "TRIMESTRAL")]
     [InlineData(PaymentMode.Monthly, "MENSUAL")]
+    [InlineData(PaymentMode.Dxn, "CONTADO")]   // DXN (descuento por nómina) viaja como Annual
     public void Maps_payment_mode(PaymentMode mode, string expected)
     {
         AxaColRequestBuilder.MapPaymentMode(mode).Should().Be(expected);

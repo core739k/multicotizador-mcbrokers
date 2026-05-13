@@ -109,6 +109,7 @@ public static class AxaColRequestBuilder
         PaymentMode.Semestral => "SEMESTRAL",
         PaymentMode.Trimestral => "TRIMESTRAL",
         PaymentMode.Monthly => "MENSUAL",
+        PaymentMode.Dxn => "CONTADO",  // DXN viaja como Annual en el wire
         _ => "CONTADO",
     };
 

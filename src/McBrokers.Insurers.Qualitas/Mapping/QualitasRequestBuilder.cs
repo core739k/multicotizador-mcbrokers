@@ -193,6 +193,7 @@ public static class QualitasRequestBuilder
         PaymentMode.Semestral => "S",
         PaymentMode.Trimestral => "T",
         PaymentMode.Monthly => "M",
+        PaymentMode.Dxn => "C",        // DXN viaja como Annual en el wire
         _ => "C",
     };
 

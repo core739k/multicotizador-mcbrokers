@@ -63,7 +63,12 @@
             <select asp-for="Input.PaymentMode" class="form-select">
                 @foreach (var p in Enum.GetValues<PaymentMode>())
                 {
-                    <option value="@p">@p</option>
+                    var label = p switch
+                    {
+                        PaymentMode.Dxn => "DXN",
+                        _ => p.ToString(),
+                    };
+                    <option value="@p">@label</option>
                 }
             </select>
         </div>

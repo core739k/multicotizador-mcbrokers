@@ -56,6 +56,17 @@ public class AnaAdapterTests
         doc.Descendants("asegurado").Single().Attribute("estado")!.Value.Should().Be("09002");
     }
 
+    [Theory]
+    [InlineData(PaymentMode.Annual, "C")]
+    [InlineData(PaymentMode.Semestral, "S")]
+    [InlineData(PaymentMode.Trimestral, "T")]
+    [InlineData(PaymentMode.Monthly, "M")]
+    [InlineData(PaymentMode.Dxn, "C")]      // DXN (descuento por nómina) viaja como Annual
+    public void Maps_payment_mode(PaymentMode mode, string expected)
+    {
+        AnaRequestBuilder.MapPaymentMode(mode).Should().Be(expected);
+    }
+
     [Fact]
     public void Parses_successful_response()
     {

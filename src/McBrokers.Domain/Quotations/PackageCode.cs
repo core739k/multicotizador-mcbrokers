@@ -13,6 +13,11 @@ public enum PaymentMode
     Semestral = 2,
     Trimestral = 3,
     Monthly = 4,
+    // Salto deliberado del valor 5 (preservado por compatibilidad con el legacy
+    // que mapeaba p_FormaPago == 6 → "C" — DXN = descuento por nómina). En el
+    // wire equivale a Annual (mismo char/cadena por aseguradora) pero se preserva
+    // como modalidad propia para reportes/comisiones.
+    Dxn = 6,
 }
 
 public enum ValuationType

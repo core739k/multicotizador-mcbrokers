@@ -72,6 +72,7 @@ public class GnpRequestBuilderTests
     [InlineData(PaymentMode.Semestral, "S")]
     [InlineData(PaymentMode.Trimestral, "T")]
     [InlineData(PaymentMode.Monthly, "M")]
+    [InlineData(PaymentMode.Dxn, "A")]      // DXN (descuento por nómina) viaja como Annual
     public void Maps_payment_periodicity(PaymentMode mode, string expected)
     {
         GnpRequestBuilder.MapPeriodicity(mode).Should().Be(expected);

@@ -50,6 +50,7 @@ public class QualitasAdapterTests
     [InlineData(PaymentMode.Semestral, "S")]
     [InlineData(PaymentMode.Trimestral, "T")]
     [InlineData(PaymentMode.Monthly, "M")]
+    [InlineData(PaymentMode.Dxn, "C")]      // DXN (descuento por nómina) viaja como Annual
     public void Maps_payment_mode(PaymentMode mode, string expected)
     {
         QualitasRequestBuilder.MapPaymentMode(mode).Should().Be(expected);

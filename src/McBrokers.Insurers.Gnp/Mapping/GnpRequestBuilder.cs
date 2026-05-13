@@ -78,6 +78,7 @@ public static class GnpRequestBuilder
         PaymentMode.Semestral => "S",
         PaymentMode.Trimestral => "T",
         PaymentMode.Monthly => "M",
+        PaymentMode.Dxn => "A",        // DXN viaja como Annual en el wire
         _ => "A",
     };
 
