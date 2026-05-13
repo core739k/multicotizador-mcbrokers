@@ -1,3 +1,4 @@
+using McBrokers.Application.Quotations;
 using McBrokers.Infrastructure;
 using McBrokers.Infrastructure.Observability;
 using Serilog;
@@ -8,6 +9,9 @@ builder.Host.UseMcBrokersSerilog();
 
 builder.Services.AddMcBrokersTelemetry(builder.Configuration);
 builder.Services.AddMcBrokersInfrastructure(builder.Configuration);
+
+builder.Services.Configure<DefaultCoverages>(
+    builder.Configuration.GetSection(DefaultCoverages.ConfigSection));
 
 builder.Services.AddRazorPages(options =>
 {

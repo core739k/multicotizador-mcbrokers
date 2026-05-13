@@ -6,6 +6,7 @@ using McBrokers.Application.Quotations;
 using McBrokers.Domain.Quotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Options;
 
 namespace McBrokers.Web.Pages.Cotizacion;
 
@@ -15,17 +16,20 @@ public class IndexModel : PageModel
     private readonly GetCatalogForYear _catalog;
     private readonly SearchVehiclesByText _search;
     private readonly ListInsurers _insurers;
+    private readonly DefaultCoverages _defaultCoverages;
 
     public IndexModel(
         RequestQuotation request,
         GetCatalogForYear catalog,
         SearchVehiclesByText search,
-        ListInsurers insurers)
+        ListInsurers insurers,
+        IOptions<DefaultCoverages> defaultCoverages)
     {
         _request = request;
         _catalog = catalog;
         _search = search;
         _insurers = insurers;
+        _defaultCoverages = defaultCoverages.Value;
     }
 
     [BindProperty]
@@ -91,12 +95,15 @@ public class IndexModel : PageModel
                 Input.Gender,
                 Input.DateOfBirth,
             },
+            // Fase A (#4): los defaults viven en appsettings.json bajo
+            // "Cotizacion:DefaultCoverages". Fase B agregará overrides por
+            // aseguradora y captura desde admin — ver REQUIREMENTS.md §4.2.
             Deductibles = new
             {
-                MaterialDamagesDeductiblePct = 5m,
-                RobberyDeductiblePct = 10m,
-                MedicalExpensesSumInsured = 200_000m,
-                CivilLiabilitySumInsured = 3_000_000m,
+                _defaultCoverages.MaterialDamagesDeductiblePct,
+                _defaultCoverages.RobberyDeductiblePct,
+                _defaultCoverages.MedicalExpensesSumInsured,
+                _defaultCoverages.CivilLiabilitySumInsured,
             },
         });
 
