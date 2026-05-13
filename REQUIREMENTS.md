@@ -2,7 +2,7 @@
 
 > Documento de trabajo. Fuente de verdad para alcance, arquitectura y orden de implementación.
 > Basado en `plan_multicotizador.md` (plan aprobado) y los documentos técnicos por aseguradora en `/Documentación/`.
-> Última actualización: 2026-05-11.
+> Última actualización: 2026-05-13.
 
 ---
 
@@ -237,6 +237,11 @@ Decisión del usuario: GNP es la primera. Validamos el flujo punta a punta con e
 - Contract tests con XMLs grabados.
 - Cargar errores conocidos de GNP a `KnownInsurerError` (incluida la lógica de 3 intentos / 5 s documentada).
 
+**Adiciones UX (feedback de usuarios, 2026-05-13) — prioridad: cotizar > emitir > styling:**
+
+- **Header del asesor (cross-cutting admin + vendor)**: cabecera superior derecha en el `_Layout` compartido con foto circular (placeholder por ahora), nombre completo del asesor y **clave de asesor**. La clave es un campo nuevo `Agent.AgentCode` (varchar corto único, opcional) — clave interna MCBrokers que Finanzas usa para pagar comisiones. Distinta de `AgentInsurerKey.ExternalAgentCode` (per aseguradora). Captura desde el admin de agentes; los agentes recién auto-provisionados por OAuth quedan sin clave hasta que admin la asigne. Estilo mínimo funcional — frontend + marketing lo refinarán después.
+- **Fallback "No encuentro el vehículo"** en el wizard de cotización: cuando los selectores no surfan el vehículo que el vendedor busca, un botón abre un buscador de texto libre sobre `VehicleMaster`. Filtrado **permisivo** por aseguradoras seleccionadas (devuelve vehículos con `VehicleInsurerMapping.ReviewState=Approved` para *al menos una* de las aseguradoras activas, marcando por resultado cuáles tienen mapping). Sin coincidencias → mensaje fijo "Contactar a la aseguradora para obtener la equivalencia" (la respuesta se canaliza al workflow de homologación de Fase 2). Implementación inicial con `LIKE` multi-token; FTS / Token Set Ratio se evalúa solo si la cobertura no alcanza con tráfico real. No introduce fuzzy-match runtime AMIS — el AMIS se sigue resolviendo por la homologación explícita.
+
 ### Fase 4 — Resto de aseguradoras (L)
 
 Una por sprint en este orden:
@@ -443,6 +448,8 @@ Sobre la API v1 (compartida con web):
 | 2026-05-11 | Orden de aseguradoras: **GNP** primero (Fase 3), luego Quálitas, ANA, AXA COL, AXA DXN. (Diferencia con plan original que sugería Quálitas como primera.) |
 | 2026-05-11 | App móvil = MAUI, después de Fases 0–5 estables. |
 | 2026-05-11 | TDD estricto: ninguna lógica de negocio sin test previo. |
+| 2026-05-13 | `Agent.AgentCode` (clave interna MCBrokers para comisiones) — nuevo campo opcional, único cuando se asigna. Distinto de `AgentInsurerKey.ExternalAgentCode`. Capturado por admin; OAuth no lo provisiona. |
+| 2026-05-13 | Fallback de búsqueda de vehículo en wizard: filtro **permisivo** por aseguradoras activas (devuelve vehículos con mapping `Approved` para al menos una). LIKE multi-token como implementación inicial. |
 
 ---
 

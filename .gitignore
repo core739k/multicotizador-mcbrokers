@@ -47,3 +47,11 @@ desktop.ini
 
 # Project-local Claude state
 .claude/settings.local.json
+
+# Material del sistema legado (no versionar — pesado y con credenciales)
+Base de Datos/
+Código Compilado/
+Código Fuente/
+
+# Notas locales de sesión
+guia_dry_run-local.md
