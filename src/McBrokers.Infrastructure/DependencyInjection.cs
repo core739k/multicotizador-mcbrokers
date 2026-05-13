@@ -50,6 +50,7 @@ public static class DependencyInjection
         services.AddScoped<IAxaDxnConfigRepository, AxaDxnConfigRepository>();
         services.AddScoped<IVehicleMasterRepository, VehicleMasterRepository>();
         services.AddScoped<IVehicleInsurerMappingRepository, VehicleInsurerMappingRepository>();
+        services.AddScoped<ISearchVehiclesByTextRepository, VehicleSearchRepository>();
         services.AddScoped<ICatalogImportBatchRepository, CatalogImportBatchRepository>();
         services.AddScoped<IQuotationRepository, QuotationRepository>();
         services.AddScoped<IInsurerPackageMappingRepository, InsurerPackageMappingRepository>();
@@ -137,6 +138,7 @@ public static class DependencyInjection
         services.AddScoped<DecideMapping>();
         services.AddScoped<GetCatalogForYear>();
         services.AddScoped<ListPendingMappings>();
+        services.AddScoped<SearchVehiclesByText>();
         services.AddScoped<RequestQuotation>();
         services.AddScoped<GetQuotationStatus>();
         services.AddScoped<ProcessQuotation>();

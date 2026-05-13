@@ -38,6 +38,8 @@
                 }
             </select>
         }
+        @* Fallback: si el vendedor no encuentra el vehículo en el desplegable. *@
+        <partial name="_VehicleFallbackSearch" model="Model" />
     </div>
 
     <h4 class="mt-4">Cotización</h4>

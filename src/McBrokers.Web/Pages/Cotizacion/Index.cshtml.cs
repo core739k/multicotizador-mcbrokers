@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
+using McBrokers.Application.Admin;
 using McBrokers.Application.Catalog;
 using McBrokers.Application.Quotations;
 using McBrokers.Domain.Quotations;
@@ -12,11 +13,19 @@ public class IndexModel : PageModel
 {
     private readonly RequestQuotation _request;
     private readonly GetCatalogForYear _catalog;
+    private readonly SearchVehiclesByText _search;
+    private readonly ListInsurers _insurers;
 
-    public IndexModel(RequestQuotation request, GetCatalogForYear catalog)
+    public IndexModel(
+        RequestQuotation request,
+        GetCatalogForYear catalog,
+        SearchVehiclesByText search,
+        ListInsurers insurers)
     {
         _request = request;
         _catalog = catalog;
+        _search = search;
+        _insurers = insurers;
     }
 
     [BindProperty]
@@ -27,19 +36,42 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public int? Year { get; set; }
 
+    // Query libre del fallback "No encuentro el vehículo".
+    [BindProperty(SupportsGet = true)]
+    public string? Q { get; set; }
+
+    // Vehículo elegido desde el panel de fallback — pre-selecciona el dropdown.
+    [BindProperty(SupportsGet = true)]
+    public Guid? SelectedVehicleId { get; set; }
+
     public int EffectiveYear => Year ?? DateTime.UtcNow.Year;
 
     public IReadOnlyList<VehicleMasterView> AvailableVehicles { get; private set; } = Array.Empty<VehicleMasterView>();
+    public IReadOnlyList<VehicleSearchResultRow> SearchResults { get; private set; } = Array.Empty<VehicleSearchResultRow>();
+    public bool SearchRan { get; private set; }
+    public IReadOnlyDictionary<Guid, string> InsurerNamesById { get; private set; } = new Dictionary<Guid, string>();
     public string? ErrorMessage { get; private set; }
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         await LoadVehiclesAsync(cancellationToken);
+        await LoadInsurerNamesAsync(cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(Q))
+        {
+            await RunFallbackSearchAsync(cancellationToken);
+        }
+
+        if (SelectedVehicleId.HasValue)
+        {
+            Input.VehicleMasterId = SelectedVehicleId.Value;
+        }
     }
 
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
         await LoadVehiclesAsync(cancellationToken);
+        await LoadInsurerNamesAsync(cancellationToken);
         if (!ModelState.IsValid) return Page();
 
         var snapshot = JsonSerializer.Serialize(new
@@ -93,6 +125,21 @@ public class IndexModel : PageModel
     {
         var view = await _catalog.ExecuteAsync(EffectiveYear, cancellationToken);
         AvailableVehicles = view.Vehicles;
+    }
+
+    private async Task LoadInsurerNamesAsync(CancellationToken cancellationToken)
+    {
+        var insurers = await _insurers.ExecuteAsync(cancellationToken);
+        InsurerNamesById = insurers.ToDictionary(i => i.Id, i => i.Name);
+    }
+
+    private async Task RunFallbackSearchAsync(CancellationToken cancellationToken)
+    {
+        SearchRan = true;
+        var insurers = await _insurers.ExecuteAsync(cancellationToken);
+        var enabledIds = insurers.Where(i => i.IsEnabled).Select(i => i.Id).ToList();
+        var results = await _search.ExecuteAsync(EffectiveYear, Q, enabledIds, cancellationToken);
+        SearchResults = results.Items;
     }
 
     public class InputModel

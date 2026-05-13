@@ -1,0 +1,74 @@
+@model McBrokers.Web.Pages.Cotizacion.IndexModel
+@{
+    var hasResults = Model.SearchResults.Count > 0;
+}
+<details class="mt-2" @(Model.SearchRan ? "open" : null)>
+    <summary class="text-decoration-underline" role="button">No encuentro el vehículo</summary>
+    <div class="border rounded p-3 mt-2 bg-light">
+        <form method="get" class="row g-2 align-items-end">
+            @* Preserva el año actual del wizard. *@
+            <input type="hidden" name="Year" value="@Model.EffectiveYear" />
+            <div class="col-md-8">
+                <label for="fallback-q" class="form-label">Buscar por descripción</label>
+                <input id="fallback-q" name="Q" type="text" class="form-control" value="@Model.Q"
+                       placeholder="ej. VW JETTA TRENDLINE" autocomplete="off" />
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-secondary w-100">Buscar</button>
+            </div>
+        </form>
+
+        @if (Model.SearchRan)
+        {
+            if (hasResults)
+            {
+                <table class="table table-sm mt-3 mb-0">
+                    <thead>
+                        <tr>
+                            <th>Vehículo</th>
+                            <th>Aseguradoras con cobertura</th>
+                            <th class="text-end"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.SearchResults)
+                        {
+                            <tr>
+                                <td>@row.Display</td>
+                                <td>
+                                    @if (row.AvailableInsurerIds.Count == 0)
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                    else
+                                    {
+                                        foreach (var iid in row.AvailableInsurerIds)
+                                        {
+                                            var name = Model.InsurerNamesById.TryGetValue(iid, out var n) ? n : iid.ToString();
+                                            <span class="badge bg-success me-1">@name</span>
+                                        }
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <a class="btn btn-sm btn-outline-primary"
+                                       asp-page="./Index"
+                                       asp-route-Year="@row.Year"
+                                       asp-route-SelectedVehicleId="@row.VehicleMasterId">
+                                        Seleccionar
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="alert alert-warning mt-3 mb-0">
+                    No se encontraron coincidencias.
+                    <strong>Contactar a la aseguradora para obtener la equivalencia.</strong>
+                </div>
+            }
+        }
+    </div>
+</details>

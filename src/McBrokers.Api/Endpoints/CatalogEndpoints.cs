@@ -14,6 +14,23 @@ public static class CatalogEndpoints
         publicGroup.MapGet("/{year:int}", async (int year, GetCatalogForYear handler, CancellationToken ct) =>
             Results.Ok(await handler.ExecuteAsync(year, ct)));
 
+        // Búsqueda libre fallback usada por el wizard cuando los selectores no
+        // surfan el vehículo. Filtro permisivo por aseguradoras seleccionadas.
+        publicGroup.MapGet("/search", async (
+            string? q,
+            int year,
+            Guid[]? insurerIds,
+            SearchVehiclesByText handler,
+            CancellationToken ct) =>
+        {
+            var result = await handler.ExecuteAsync(
+                year,
+                q,
+                insurerIds is null ? Array.Empty<Guid>() : insurerIds.ToList(),
+                ct);
+            return Results.Ok(result);
+        });
+
         // Admin-only endpoints for the review queue.
         var adminGroup = app.MapGroup("/api/v1/admin/catalog")
             .RequireAuthorization("RequireAdmin")
