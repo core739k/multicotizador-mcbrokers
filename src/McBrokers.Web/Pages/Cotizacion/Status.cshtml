@@ -89,6 +89,16 @@ else
                                 <div>@FormatMoney(Model.View.Deducibles?.MedicalExpensesSumInsured)</div>
                             </div>
                         </div>
+                        @if (r.CoverageBadges.Count > 0)
+                        {
+                            <div class="mt-2 d-flex flex-wrap gap-1">
+                                @foreach (var badge in r.CoverageBadges)
+                                {
+                                    var cls = badge.Amparado ? "bg-success" : "bg-secondary";
+                                    <span class="badge @cls">@badge.Label: @(badge.Amparado ? "Amparado" : "No amparado")</span>
+                                }
+                            </div>
+                        }
                         <div class="text-muted small mt-2">
                             Ref: <code>@r.ExternalQuoteRef</code> · @r.LatencyMs ms ·
                             Prima neta $@r.PremiumNet?.ToString("N2") · IVA $@r.Tax?.ToString("N2") · Derechos $@r.Fees?.ToString("N2")

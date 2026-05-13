@@ -198,6 +198,60 @@ public class GetQuotationStatusTests
     }
 
     [Fact]
+    public async Task Result_view_includes_coverage_badges_from_PackageCoverageMatrix()
+    {
+        var vehicleId = Guid.NewGuid();
+        var insurerId = Guid.NewGuid();
+        var q = BuildQuotation(vehicleId, "{}");
+        var result = QuotationInsurerResult.SucceededResult(
+            q.Id, insurerId,
+            premiumTotal: 1m, premiumNet: 1m, tax: 0m, fees: 0m,
+            latencyMs: 1, externalQuoteRef: "Q-1",
+            requestBlobRef: null, responseBlobRef: null, createdAt: NowUtc).Value;
+        q.RecordResult(result);
+
+        var qua = Insurer.Create(InsurerCode.Qua, "Quálitas", displayOrder: 2).Value;
+        ForceId(qua, insurerId);
+
+        _quotations.Setup(r => r.GetByIdAsync(q.Id, It.IsAny<CancellationToken>())).ReturnsAsync(q);
+        _vehicles.Setup(r => r.GetByIdAsync(vehicleId, It.IsAny<CancellationToken>())).ReturnsAsync(BuildVehicle(vehicleId));
+        _insurers.Setup(r => r.ListAsync(It.IsAny<CancellationToken>())).ReturnsAsync(new[] { qua });
+
+        var handler = new GetQuotationStatus(_quotations.Object, _vehicles.Object, _insurers.Object);
+        var view = await handler.ExecuteAsync(q.Id, CancellationToken.None);
+
+        var row = view!.Results.Single();
+        row.CoverageBadges.Should().HaveCount(3);
+        row.CoverageBadges[0].Label.Should().Be("Protección Legal");
+        row.CoverageBadges[1].Label.Should().Be("RC Ocupantes");
+        row.CoverageBadges[2].Label.Should().Be("Asistencia Vial Plus");
+        row.CoverageBadges.Should().AllSatisfy(b => b.Amparado.Should().BeTrue());
+    }
+
+    [Fact]
+    public async Task Result_view_has_empty_coverage_badges_when_insurer_missing()
+    {
+        var vehicleId = Guid.NewGuid();
+        var insurerId = Guid.NewGuid();
+        var q = BuildQuotation(vehicleId, "{}");
+        var result = QuotationInsurerResult.SucceededResult(
+            q.Id, insurerId,
+            premiumTotal: 1m, premiumNet: 1m, tax: 0m, fees: 0m,
+            latencyMs: 1, externalQuoteRef: "X",
+            requestBlobRef: null, responseBlobRef: null, createdAt: NowUtc).Value;
+        q.RecordResult(result);
+
+        _quotations.Setup(r => r.GetByIdAsync(q.Id, It.IsAny<CancellationToken>())).ReturnsAsync(q);
+        _vehicles.Setup(r => r.GetByIdAsync(vehicleId, It.IsAny<CancellationToken>())).ReturnsAsync(BuildVehicle(vehicleId));
+        _insurers.Setup(r => r.ListAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Array.Empty<Insurer>());
+
+        var handler = new GetQuotationStatus(_quotations.Object, _vehicles.Object, _insurers.Object);
+        var view = await handler.ExecuteAsync(q.Id, CancellationToken.None);
+
+        view!.Results.Single().CoverageBadges.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Result_view_falls_back_to_null_insurer_fields_when_insurer_missing()
     {
         var vehicleId = Guid.NewGuid();

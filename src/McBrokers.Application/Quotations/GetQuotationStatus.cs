@@ -40,7 +40,8 @@ public sealed record QuotationResultView(
     decimal? Tax,
     decimal? Fees,
     int LatencyMs,
-    string? ExternalQuoteRef);
+    string? ExternalQuoteRef,
+    IReadOnlyList<CoverageBadge> CoverageBadges);
 
 public sealed class GetQuotationStatus
 {
@@ -76,12 +77,13 @@ public sealed class GetQuotationStatus
             SumInsured: q.SumInsured,
             Vehicle: vehicle,
             Deducibles: ParseDeducibles(q.CustomerSnapshotJson),
-            Results: q.Results.Select(r => ProjectResult(r, byId)).ToList());
+            Results: q.Results.Select(r => ProjectResult(r, byId, q.Package)).ToList());
     }
 
     private static QuotationResultView ProjectResult(
         QuotationInsurerResult r,
-        IReadOnlyDictionary<Guid, Insurer> byId)
+        IReadOnlyDictionary<Guid, Insurer> byId,
+        PackageCode package)
     {
         var insurer = byId.GetValueOrDefault(r.InsurerId);
         // LogoUrl explícito de la BD si está, si no fallback al asset del wwwroot
@@ -91,6 +93,13 @@ public sealed class GetQuotationStatus
             ? null
             : InsurerLogoMapping.DefaultRelativeUrl(insurer.Code));
 
+        // Coverage badges derivados del paquete y la aseguradora — el WS no devuelve
+        // este detalle (solo totales de prima), así que es matriz determinista hoy.
+        // Sin insurer (caso defensivo) → lista vacía.
+        var coverageBadges = insurer is null
+            ? Array.Empty<CoverageBadge>()
+            : PackageCoverageMatrix.Compute(insurer.Code, package);
+
         return new QuotationResultView(
             r.Id, r.InsurerId,
             insurer?.Code,
@@ -99,7 +108,8 @@ public sealed class GetQuotationStatus
             r.Status, r.ErrorCategory,
             r.ErrorCode, r.ErrorMessageHuman,
             r.PremiumTotal, r.PremiumNet, r.Tax, r.Fees,
-            r.LatencyMs, r.ExternalQuoteRef);
+            r.LatencyMs, r.ExternalQuoteRef,
+            coverageBadges);
     }
 
     // Parser tolerante: snapshots viejos o malformados devuelven null sin crashear.
