@@ -10,12 +10,18 @@ public class IndexModel : PageModel
     private readonly ListAgents _listAgents;
     private readonly UpdateAgentRole _updateRole;
     private readonly SetAgentActive _setActive;
+    private readonly UpdateAgentCode _updateCode;
 
-    public IndexModel(ListAgents listAgents, UpdateAgentRole updateRole, SetAgentActive setActive)
+    public IndexModel(
+        ListAgents listAgents,
+        UpdateAgentRole updateRole,
+        SetAgentActive setActive,
+        UpdateAgentCode updateCode)
     {
         _listAgents = listAgents;
         _updateRole = updateRole;
         _setActive = setActive;
+        _updateCode = updateCode;
     }
 
     public IReadOnlyList<AgentView> Agents { get; private set; } = Array.Empty<AgentView>();
@@ -36,6 +42,13 @@ public class IndexModel : PageModel
     public async Task<IActionResult> OnPostActiveAsync(Guid agentId, bool isActive, CancellationToken cancellationToken)
     {
         var result = await _setActive.ExecuteAsync(new SetAgentActiveCommand(agentId, isActive), cancellationToken);
+        if (!result.IsSuccess) ErrorMessage = result.Error;
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostCodeAsync(Guid agentId, string? agentCode, CancellationToken cancellationToken)
+    {
+        var result = await _updateCode.ExecuteAsync(new UpdateAgentCodeCommand(agentId, agentCode), cancellationToken);
         if (!result.IsSuccess) ErrorMessage = result.Error;
         return RedirectToPage();
     }

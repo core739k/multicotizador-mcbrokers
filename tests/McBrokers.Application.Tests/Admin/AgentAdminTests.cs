@@ -86,4 +86,72 @@ public class AgentAdminTests
         result.IsSuccess.Should().BeTrue();
         agent.IsActive.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task UpdateAgentCode_sets_code_and_audits()
+    {
+        var agent = BuildAgent();
+        _agents.Setup(r => r.GetByIdAsync(agent.Id, It.IsAny<CancellationToken>())).ReturnsAsync(agent);
+        _agents.Setup(r => r.UpdateAsync(agent, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        _audit.Setup(a => a.WriteAsync(
+            "Agent.UpdateAgentCode", "Agent", agent.Id.ToString(), It.IsAny<object?>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var handler = new UpdateAgentCode(_agents.Object, _audit.Object);
+        var result = await handler.ExecuteAsync(
+            new UpdateAgentCodeCommand(agent.Id, "MCB-001"),
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        agent.AgentCode.Should().Be("MCB-001");
+    }
+
+    [Fact]
+    public async Task UpdateAgentCode_clears_code_when_value_is_blank()
+    {
+        var agent = BuildAgent();
+        agent.SetAgentCode("MCB-001");
+        _agents.Setup(r => r.GetByIdAsync(agent.Id, It.IsAny<CancellationToken>())).ReturnsAsync(agent);
+        _agents.Setup(r => r.UpdateAsync(agent, It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        _audit.Setup(a => a.WriteAsync(
+            "Agent.UpdateAgentCode", "Agent", agent.Id.ToString(), It.IsAny<object?>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var handler = new UpdateAgentCode(_agents.Object, _audit.Object);
+        var result = await handler.ExecuteAsync(
+            new UpdateAgentCodeCommand(agent.Id, ""),
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        agent.AgentCode.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task UpdateAgentCode_fails_when_agent_not_found()
+    {
+        var id = Guid.NewGuid();
+        _agents.Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Agent?)null);
+
+        var handler = new UpdateAgentCode(_agents.Object, _audit.Object);
+        var result = await handler.ExecuteAsync(
+            new UpdateAgentCodeCommand(id, "MCB-001"),
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task UpdateAgentCode_fails_when_code_invalid()
+    {
+        var agent = BuildAgent();
+        _agents.Setup(r => r.GetByIdAsync(agent.Id, It.IsAny<CancellationToken>())).ReturnsAsync(agent);
+
+        var handler = new UpdateAgentCode(_agents.Object, _audit.Object);
+        var result = await handler.ExecuteAsync(
+            new UpdateAgentCodeCommand(agent.Id, "AB"),
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        agent.AgentCode.Should().BeNull();
+    }
 }

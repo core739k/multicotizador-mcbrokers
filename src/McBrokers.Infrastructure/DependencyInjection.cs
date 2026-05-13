@@ -1,4 +1,5 @@
 using McBrokers.Application.Admin;
+using McBrokers.Application.Agents;
 using McBrokers.Application.Auth;
 using McBrokers.Application.Catalog;
 using McBrokers.Application.Ports;
@@ -130,6 +131,8 @@ public static class DependencyInjection
         services.AddScoped<ListAgents>();
         services.AddScoped<UpdateAgentRole>();
         services.AddScoped<SetAgentActive>();
+        services.AddScoped<UpdateAgentCode>();
+        services.AddScoped<GetCurrentAgentSummary>();
         services.AddScoped<ImportInsurerCatalog>();
         services.AddScoped<DecideMapping>();
         services.AddScoped<GetCatalogForYear>();

@@ -29,3 +29,33 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+/* Header del asesor — estilo mínimo funcional.
+   Frontend + marketing refinarán colores, tipografía y responsive después. */
+.agent-header {
+  font-size: 0.85rem;
+  line-height: 1.1;
+}
+
+.agent-header__avatar {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: #d6e4f0;
+  color: #1f4e79;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.agent-header__name {
+  font-weight: 600;
+  color: #212529;
+}
+
+.agent-header__code {
+  font-size: 0.75rem;
+  color: #495057;
+}

@@ -23,6 +23,7 @@ else
             <tr>
                 <th>Nombre</th>
                 <th>Email</th>
+                <th>Clave</th>
                 <th>Rol</th>
                 <th>Estado</th>
                 <th></th>
@@ -34,6 +35,18 @@ else
                 <tr>
                     <td>@agent.FullName</td>
                     <td><code>@agent.Email</code></td>
+                    <td>
+                        <form method="post" asp-page-handler="Code" class="d-flex gap-2">
+                            <input type="hidden" name="AgentId" value="@agent.Id" />
+                            <input type="text" name="AgentCode" value="@agent.AgentCode"
+                                   class="form-control form-control-sm"
+                                   style="width:8rem;"
+                                   maxlength="15" pattern="[A-Za-z0-9-]{3,15}"
+                                   placeholder="MCB-001"
+                                   title="3-15 caracteres alfanuméricos (guiones permitidos). Vacío para limpiar." />
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Guardar</button>
+                        </form>
+                    </td>
                     <td>
                         <form method="post" asp-page-handler="Role" class="d-flex gap-2">
                             <input type="hidden" name="AgentId" value="@agent.Id" />

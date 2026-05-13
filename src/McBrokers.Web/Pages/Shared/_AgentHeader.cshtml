@@ -1,0 +1,28 @@
+@using System.Security.Claims
+@{
+    var fullName = User.FindFirst("mcb:full-name")?.Value
+                   ?? User.FindFirst(ClaimTypes.Email)?.Value
+                   ?? "—";
+    var agentCode = User.FindFirst("mcb:agent-code")?.Value;
+    var initials = string.Concat(fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        .Take(2).Select(p => p.Length > 0 ? char.ToUpperInvariant(p[0]).ToString() : string.Empty));
+    if (string.IsNullOrWhiteSpace(initials)) initials = "?";
+}
+<div class="agent-header d-flex align-items-center gap-2">
+    <div class="agent-header__avatar" aria-hidden="true" title="Foto de perfil (placeholder)">
+        @initials
+    </div>
+    <div class="agent-header__text">
+        <div class="agent-header__name">@fullName</div>
+        <div class="agent-header__code">
+            @if (!string.IsNullOrWhiteSpace(agentCode))
+            {
+                <span>Clave: <code>@agentCode</code></span>
+            }
+            else
+            {
+                <span class="text-muted">Sin clave asignada</span>
+            }
+        </div>
+    </div>
+</div>

@@ -39,8 +39,18 @@ public class AgentConfiguration : IEntityTypeConfiguration<Agent>
             .IsRequired()
             .HasDefaultValue(false);
 
+        builder.Property(a => a.AgentCode)
+            .HasMaxLength(Agent.AgentCodeMaxLength)
+            .IsRequired(false);
+
         builder.HasIndex(a => a.Email)
             .IsUnique()
             .HasDatabaseName("UX_Agents_Email");
+
+        // Único cuando hay valor; varios NULL permitidos en SQL Server vía filtered index.
+        builder.HasIndex(a => a.AgentCode)
+            .IsUnique()
+            .HasFilter("[AgentCode] IS NOT NULL")
+            .HasDatabaseName("UX_Agents_AgentCode");
     }
 }

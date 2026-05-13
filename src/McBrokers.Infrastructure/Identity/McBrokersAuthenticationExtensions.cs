@@ -70,6 +70,10 @@ public static class McBrokersAuthenticationExtensions
                     context.Identity!.AddClaim(new Claim(HttpContextCurrentAgentProvider.AgentIdClaim, agent.Id.ToString()));
                     context.Identity.AddClaim(new Claim(ClaimTypes.Role, agent.Role.ToString()));
                     context.Identity.AddClaim(new Claim("mcb:full-name", agent.FullName));
+                    if (!string.IsNullOrWhiteSpace(agent.AgentCode))
+                    {
+                        context.Identity.AddClaim(new Claim("mcb:agent-code", agent.AgentCode));
+                    }
                     if (agent.IsTechnical)
                     {
                         context.Identity.AddClaim(new Claim("mcb:is-technical", "true"));

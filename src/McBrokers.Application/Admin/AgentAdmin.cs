@@ -8,10 +8,12 @@ public sealed record UpdateAgentRoleCommand(Guid AgentId, AgentRole Role);
 
 public sealed record SetAgentActiveCommand(Guid AgentId, bool IsActive);
 
-public sealed record AgentView(Guid Id, string Email, string FullName, AgentRole Role, bool IsActive)
+public sealed record UpdateAgentCodeCommand(Guid AgentId, string? AgentCode);
+
+public sealed record AgentView(Guid Id, string Email, string FullName, AgentRole Role, bool IsActive, string? AgentCode)
 {
     public static AgentView From(Agent agent) =>
-        new(agent.Id, agent.Email.Value, agent.FullName, agent.Role, agent.IsActive);
+        new(agent.Id, agent.Email.Value, agent.FullName, agent.Role, agent.IsActive, agent.AgentCode);
 }
 
 public sealed class ListAgents
@@ -91,6 +93,41 @@ public sealed class SetAgentActive
             entityType: "Agent",
             entityId: agent.Id.ToString(),
             payload: new { agent.Email.Value, agent.IsActive },
+            cancellationToken).ConfigureAwait(false);
+
+        return Result<Guid>.Success(agent.Id);
+    }
+}
+
+public sealed class UpdateAgentCode
+{
+    private readonly IAgentRepository _agents;
+    private readonly IAuditWriter _audit;
+
+    public UpdateAgentCode(IAgentRepository agents, IAuditWriter audit)
+    {
+        _agents = agents;
+        _audit = audit;
+    }
+
+    public async Task<Result<Guid>> ExecuteAsync(UpdateAgentCodeCommand command, CancellationToken cancellationToken)
+    {
+        var agent = await _agents.GetByIdAsync(command.AgentId, cancellationToken).ConfigureAwait(false);
+        if (agent is null)
+        {
+            return Result<Guid>.Failure($"Agent with id '{command.AgentId}' not found.");
+        }
+
+        var previous = agent.AgentCode;
+        var update = agent.SetAgentCode(command.AgentCode);
+        if (!update.IsSuccess) return Result<Guid>.Failure(update.Error);
+
+        await _agents.UpdateAsync(agent, cancellationToken).ConfigureAwait(false);
+        await _audit.WriteAsync(
+            action: "Agent.UpdateAgentCode",
+            entityType: "Agent",
+            entityId: agent.Id.ToString(),
+            payload: new { agent.Email.Value, From = previous, To = agent.AgentCode },
             cancellationToken).ConfigureAwait(false);
 
         return Result<Guid>.Success(agent.Id);

@@ -162,4 +162,102 @@ public class AgentTests
 
         a.Should().NotBe(b);
     }
+
+    [Fact]
+    public void Newly_created_agent_has_no_agent_code()
+    {
+        var agent = Agent.Create(ValidEmail, "Esteban", AgentRole.Agent).Value;
+
+        agent.AgentCode.Should().BeNull(
+            because: "OAuth auto-provisions agents without a commission code; admin captures it later");
+    }
+
+    [Theory]
+    [InlineData("MCB001")]
+    [InlineData("MCB-001")]
+    [InlineData("ECONT01")]
+    [InlineData("ABC")]
+    [InlineData("123456789012345")]
+    public void SetAgentCode_accepts_valid_codes(string code)
+    {
+        var agent = Agent.Create(ValidEmail, "Esteban", AgentRole.Agent).Value;
+
+        var result = agent.SetAgentCode(code);
+
+        result.IsSuccess.Should().BeTrue();
+        agent.AgentCode.Should().Be(code);
+    }
+
+    [Fact]
+    public void SetAgentCode_trims_whitespace()
+    {
+        var agent = Agent.Create(ValidEmail, "Esteban", AgentRole.Agent).Value;
+
+        var result = agent.SetAgentCode("  MCB-001  ");
+
+        result.IsSuccess.Should().BeTrue();
+        agent.AgentCode.Should().Be("MCB-001");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void SetAgentCode_with_blank_value_clears_the_code(string? blank)
+    {
+        var agent = Agent.Create(ValidEmail, "Esteban", AgentRole.Agent).Value;
+        agent.SetAgentCode("MCB-001");
+
+        var result = agent.SetAgentCode(blank);
+
+        result.IsSuccess.Should().BeTrue();
+        agent.AgentCode.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("AB")]
+    [InlineData("1234567890123456")]
+    public void SetAgentCode_rejects_codes_outside_length_bounds(string code)
+    {
+        var agent = Agent.Create(ValidEmail, "Esteban", AgentRole.Agent).Value;
+        agent.SetAgentCode("PREV-01");
+
+        var result = agent.SetAgentCode(code);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("3", because: "the error should mention the length bounds");
+        agent.AgentCode.Should().Be("PREV-01", because: "rejected updates leave previous value intact");
+    }
+
+    [Theory]
+    [InlineData("MCB 001")]
+    [InlineData("MCB/001")]
+    [InlineData("MCB_001")]
+    [InlineData("MCB.001")]
+    public void SetAgentCode_rejects_codes_with_disallowed_characters(string code)
+    {
+        var agent = Agent.Create(ValidEmail, "Esteban", AgentRole.Agent).Value;
+
+        var result = agent.SetAgentCode(code);
+
+        result.IsSuccess.Should().BeFalse();
+        agent.AgentCode.Should().BeNull();
+    }
+
+    [Fact]
+    public void Create_can_seed_a_valid_agent_code()
+    {
+        var result = Agent.Create(ValidEmail, "Esteban", AgentRole.Agent, agentCode: "MCB-001");
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.AgentCode.Should().Be("MCB-001");
+    }
+
+    [Fact]
+    public void Create_rejects_invalid_agent_code()
+    {
+        var result = Agent.Create(ValidEmail, "Esteban", AgentRole.Agent, agentCode: "AB");
+
+        result.IsSuccess.Should().BeFalse();
+    }
 }

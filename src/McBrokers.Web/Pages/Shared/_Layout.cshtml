@@ -40,8 +40,8 @@
                     <ul class="navbar-nav">
                         @if (User?.Identity?.IsAuthenticated == true)
                         {
-                            <li class="nav-item d-flex align-items-center px-2 text-muted">
-                                @(User.FindFirst("mcb:full-name")?.Value ?? User.FindFirst(ClaimTypes.Email)?.Value)
+                            <li class="nav-item d-flex align-items-center px-2">
+                                <partial name="_AgentHeader" />
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-page="/Signout">Salir</a>
