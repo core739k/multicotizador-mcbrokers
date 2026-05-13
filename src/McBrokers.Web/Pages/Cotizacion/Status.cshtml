@@ -34,8 +34,13 @@ else
             <div class="card mb-3 @(r.Status == QuotationInsurerStatus.Succeeded ? "border-success" : "border-danger")">
                 <div class="card-body py-3">
                     <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h5 class="card-title mb-0">
-                            Aseguradora <small class="text-muted">@r.InsurerId.ToString().Substring(0, 8)</small>
+                        <h5 class="card-title mb-0 d-flex align-items-center gap-2">
+                            @if (!string.IsNullOrWhiteSpace(r.InsurerLogoUrl))
+                            {
+                                <img src="@r.InsurerLogoUrl" alt="@(r.InsurerName ?? "Aseguradora")"
+                                     class="quote-result-logo" />
+                            }
+                            <span>@(r.InsurerName ?? "Aseguradora")</span>
                             <span class="badge bg-@StatusColor(r.Status) ms-2">@r.Status</span>
                         </h5>
                         @if (r.Status == QuotationInsurerStatus.Succeeded)

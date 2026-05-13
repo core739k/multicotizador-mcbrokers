@@ -59,3 +59,11 @@ body {
   font-size: 0.75rem;
   color: #495057;
 }
+
+/* Logo de aseguradora en tarjetas de resultados — altura fija, mantiene aspecto. */
+.quote-result-logo {
+  height: 2.25rem;
+  width: auto;
+  max-width: 6rem;
+  object-fit: contain;
+}

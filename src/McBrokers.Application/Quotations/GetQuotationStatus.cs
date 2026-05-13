@@ -1,5 +1,6 @@
 using System.Text.Json;
 using McBrokers.Application.Ports;
+using McBrokers.Domain.Insurers;
 using McBrokers.Domain.Quotations;
 
 namespace McBrokers.Application.Quotations;
@@ -27,6 +28,9 @@ public sealed record QuotationDeduciblesView(
 public sealed record QuotationResultView(
     Guid Id,
     Guid InsurerId,
+    InsurerCode? InsurerCode,
+    string? InsurerName,
+    string? InsurerLogoUrl,
     QuotationInsurerStatus Status,
     ErrorCategory ErrorCategory,
     string? ErrorCode,
@@ -42,11 +46,16 @@ public sealed class GetQuotationStatus
 {
     private readonly IQuotationRepository _quotations;
     private readonly IVehicleMasterRepository _vehicles;
+    private readonly IInsurerRepository _insurers;
 
-    public GetQuotationStatus(IQuotationRepository quotations, IVehicleMasterRepository vehicles)
+    public GetQuotationStatus(
+        IQuotationRepository quotations,
+        IVehicleMasterRepository vehicles,
+        IInsurerRepository insurers)
     {
         _quotations = quotations;
         _vehicles = vehicles;
+        _insurers = insurers;
     }
 
     public async Task<QuotationStatusView?> ExecuteAsync(Guid id, CancellationToken cancellationToken)
@@ -59,16 +68,38 @@ public sealed class GetQuotationStatus
             ? null
             : new QuotationVehicleView(master.Year, master.Brand, master.Model, master.Version);
 
+        var insurers = await _insurers.ListAsync(cancellationToken).ConfigureAwait(false);
+        var byId = insurers.ToDictionary(i => i.Id);
+
         return new QuotationStatusView(
             q.Id, q.CorrelationId, q.Status, q.ExpectedResultsCount,
             SumInsured: q.SumInsured,
             Vehicle: vehicle,
             Deducibles: ParseDeducibles(q.CustomerSnapshotJson),
-            Results: q.Results.Select(r => new QuotationResultView(
-                r.Id, r.InsurerId, r.Status, r.ErrorCategory,
-                r.ErrorCode, r.ErrorMessageHuman,
-                r.PremiumTotal, r.PremiumNet, r.Tax, r.Fees,
-                r.LatencyMs, r.ExternalQuoteRef)).ToList());
+            Results: q.Results.Select(r => ProjectResult(r, byId)).ToList());
+    }
+
+    private static QuotationResultView ProjectResult(
+        QuotationInsurerResult r,
+        IReadOnlyDictionary<Guid, Insurer> byId)
+    {
+        var insurer = byId.GetValueOrDefault(r.InsurerId);
+        // LogoUrl explícito de la BD si está, si no fallback al asset del wwwroot
+        // vía InsurerLogoMapping. Para Insurer no encontrado (raro: cambio de id
+        // o catálogo desincronizado) el view sigue siendo coherente con null/null.
+        var logoUrl = insurer?.LogoUrl ?? (insurer is null
+            ? null
+            : InsurerLogoMapping.DefaultRelativeUrl(insurer.Code));
+
+        return new QuotationResultView(
+            r.Id, r.InsurerId,
+            insurer?.Code,
+            insurer?.Name,
+            logoUrl,
+            r.Status, r.ErrorCategory,
+            r.ErrorCode, r.ErrorMessageHuman,
+            r.PremiumTotal, r.PremiumNet, r.Tax, r.Fees,
+            r.LatencyMs, r.ExternalQuoteRef);
     }
 
     // Parser tolerante: snapshots viejos o malformados devuelven null sin crashear.
