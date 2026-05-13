@@ -17,6 +17,13 @@
     <div class="alert alert-danger">@Model.ErrorMessage</div>
 }
 
+@*
+    Fallback de búsqueda de vehículo. Vive FUERA del <form method="post"> de cotización
+    porque tiene su propio <form method="get"> y HTML5 prohíbe forms anidados — la
+    anidación causaba que el botón "Cotizar" no enviara el POST principal.
+*@
+<partial name="_VehicleFallbackSearch" model="Model" />
+
 <form method="post" class="mt-3">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
@@ -38,8 +45,6 @@
                 }
             </select>
         }
-        @* Fallback: si el vendedor no encuentra el vehículo en el desplegable. *@
-        <partial name="_VehicleFallbackSearch" model="Model" />
     </div>
 
     <h4 class="mt-4">Cotización</h4>
