@@ -73,10 +73,6 @@ else
                                 <div>@(Model.View.Vehicle?.Version ?? "—")</div>
                             </div>
                             <div class="col">
-                                <div class="text-muted small">Valor estimado</div>
-                                <div>$@Model.View.SumInsured.ToString("N0")</div>
-                            </div>
-                            <div class="col">
                                 <div class="text-muted small">DM</div>
                                 <div>@FormatPercent(Model.View.Deducibles?.MaterialDamagesDeductiblePct)</div>
                             </div>
