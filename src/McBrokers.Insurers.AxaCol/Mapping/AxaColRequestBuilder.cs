@@ -20,7 +20,9 @@ public static class AxaColRequestBuilder
         var dateFmt = today.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
         var endFmt = endDate.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
         var age = CalculateAge(today, req.HabitualDriver.DateOfBirth);
-        var sumaVF = FormatMoney(req.SumInsured);
+        // SumInsured solo viaja cuando ValuationType es Agreed/AgreedPlus10/Invoice.
+        // Para Commercial/CommercialPlus10 AXA COL calcula desde su tarifa interna.
+        var sumaVF = req.ValuationType.ShouldSendSumInsured() ? FormatMoney(req.SumInsured) : "0";
         var tipoValor = MapValuation(req.ValuationType);
         var coberturas = BuildCoverages(req);
 

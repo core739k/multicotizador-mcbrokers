@@ -84,7 +84,9 @@ public static class AxaDxnRequestBuilder
 
     private static XElement BuildDatosCoberturas(InsurerQuoteRequest req, AxaDxnAdapterConfig axa)
     {
-        var sumaVF = FormatMoney(req.SumInsured);
+        // SumInsured solo viaja cuando ValuationType es Agreed/AgreedPlus10/Invoice.
+        // Para Commercial/CommercialPlus10 AXA DXN calcula desde su tarifa interna.
+        var sumaVF = req.ValuationType.ShouldSendSumInsured() ? FormatMoney(req.SumInsured) : "0";
         var tipoValor = MapValuationDescriptor(req.ValuationType);
         var pctValor = MapValuationPercentage(req.ValuationType);
         var sumaRcMiles = FormatMoney(req.Deductibles.CivilLiabilitySumInsured / 1000m);

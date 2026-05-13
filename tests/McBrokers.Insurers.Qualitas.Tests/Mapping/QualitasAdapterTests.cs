@@ -56,6 +56,23 @@ public class QualitasAdapterTests
         QualitasRequestBuilder.MapPaymentMode(mode).Should().Be(expected);
     }
 
+    [Theory]
+    [InlineData(ValuationType.Commercial, "0")]
+    [InlineData(ValuationType.CommercialPlus10, "0")]
+    [InlineData(ValuationType.Agreed, "250000")]
+    [InlineData(ValuationType.AgreedPlus10, "250000")]
+    [InlineData(ValuationType.Invoice, "250000")]
+    public void SumaAsegurada_sent_only_when_valuation_type_requires_it(ValuationType valuation, string expected)
+    {
+        // Coverage "01" (Daños Materiales) está siempre presente en paquete Amplia y lleva SumaAsegurada.
+        var req = SampleRequest(PackageCode.Amplia) with { ValuationType = valuation, SumInsured = 250000m };
+        var xml = QualitasRequestBuilder.BuildMovimientosXml(req, new DateOnly(2026, 5, 11));
+        var doc = XDocument.Parse(xml);
+
+        var dm = doc.Descendants("Coberturas").Single(c => c.Attribute("NoCobertura")!.Value == "01");
+        dm.Element("SumaAsegurada")!.Value.Should().Be(expected);
+    }
+
     [Fact]
     public void AMIS_verifier_completes_sum_to_multiple_of_10()
     {

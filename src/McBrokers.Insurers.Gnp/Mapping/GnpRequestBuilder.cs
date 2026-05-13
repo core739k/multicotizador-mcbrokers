@@ -44,7 +44,7 @@ public static class GnpRequestBuilder
                     new XElement("VERSION", version),
                     new XElement("USO", "01"),
                     new XElement("FORMA_INDEMNIZACION", MapValuation(req.ValuationType)),
-                    new XElement("VALOR_FACTURA", FormatMoney(req.SumInsured))),
+                    new XElement("VALOR_FACTURA", FormatSumInsured(req))),
                 new XElement("CONTRATANTE",
                     new XElement("TIPO_PERSONA", "F"),
                     new XElement("CODIGO_POSTAL", req.PostalCode),
@@ -168,4 +168,10 @@ public static class GnpRequestBuilder
             new XElement("CVE_COBERTURA", code),
             new XElement("SUMA_ASEGURADA", FormatMoney(sumInsured)),
             new XElement("DEDUCIBLE", string.Empty));
+
+    // SumInsured solo viaja cuando ValuationType es Agreed/AgreedPlus10/Invoice.
+    // Para Commercial/CommercialPlus10 GNP calcula desde su tarifa interna —
+    // mandamos "0" como placeholder en VALOR_FACTURA.
+    private static string FormatSumInsured(InsurerQuoteRequest req) =>
+        req.ValuationType.ShouldSendSumInsured() ? FormatMoney(req.SumInsured) : "0";
 }

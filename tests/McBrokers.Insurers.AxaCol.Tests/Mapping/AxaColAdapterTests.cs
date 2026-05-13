@@ -43,6 +43,21 @@ public class AxaColAdapterTests
     }
 
     [Theory]
+    [InlineData(ValuationType.Commercial, "0")]
+    [InlineData(ValuationType.CommercialPlus10, "0")]
+    [InlineData(ValuationType.Agreed, "250000")]
+    [InlineData(ValuationType.AgreedPlus10, "250000")]
+    [InlineData(ValuationType.Invoice, "250000")]
+    public void ValorComercial_sent_only_when_valuation_type_requires_it(ValuationType valuation, string expected)
+    {
+        var req = SampleRequest() with { ValuationType = valuation, SumInsured = 250000m };
+        var xml = AxaColRequestBuilder.BuildSolicitudXml(req, new DateOnly(2026, 5, 11));
+        var doc = XDocument.Parse(xml);
+
+        doc.Descendants("ValorComercial").Single().Value.Should().Be(expected);
+    }
+
+    [Theory]
     [InlineData(PaymentMode.Annual, "CONTADO")]
     [InlineData(PaymentMode.Semestral, "SEMESTRAL")]
     [InlineData(PaymentMode.Trimestral, "TRIMESTRAL")]

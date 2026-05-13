@@ -59,6 +59,21 @@ public class AxaDxnAdapterTests
         AxaDxnRequestBuilder.MapValuationPercentage(v).Should().Be(pct);
     }
 
+    [Theory]
+    [InlineData(ValuationType.Commercial, "0")]
+    [InlineData(ValuationType.CommercialPlus10, "0")]
+    [InlineData(ValuationType.Agreed, "250000")]
+    [InlineData(ValuationType.AgreedPlus10, "250000")]
+    [InlineData(ValuationType.Invoice, "250000")]
+    public void valorUnidad_sent_only_when_valuation_type_requires_it(ValuationType valuation, string expected)
+    {
+        var req = SampleRequest() with { ValuationType = valuation, SumInsured = 250000m };
+        var soap = AxaDxnRequestBuilder.BuildSoapEnvelope(req, SampleAxa, new DateOnly(2026, 5, 11));
+
+        // valorUnidad va dentro de datosCoberturas en el cuerpo del SOAP.
+        soap.Should().Contain($"<valorUnidad>{expected}</valorUnidad>");
+    }
+
     [Fact]
     public void Body_includes_DM_only_for_AMPLIA()
     {

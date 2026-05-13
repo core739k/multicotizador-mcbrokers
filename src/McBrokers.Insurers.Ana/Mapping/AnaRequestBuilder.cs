@@ -89,7 +89,9 @@ public static class AnaRequestBuilder
         var amis = req.Vehicle.ExternalClave;
         var paquete = MapPlan(req.Package);
         var valorEstimado = MapValuation(req.ValuationType);
-        var sumaVF = FormatMoney(req.SumInsured);
+        // SumInsured solo viaja cuando ValuationType es Agreed/AgreedPlus10/Invoice.
+        // Para Commercial/CommercialPlus10 ANA calcula desde su tarifa interna.
+        var sumaVF = req.ValuationType.ShouldSendSumInsured() ? FormatMoney(req.SumInsured) : "0";
         var coverages = BuildCoverages(req, sumaVF, valorEstimado);
 
         return new XElement("vehiculo",

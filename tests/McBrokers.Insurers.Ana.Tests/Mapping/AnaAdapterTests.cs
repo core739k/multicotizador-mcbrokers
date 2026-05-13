@@ -67,6 +67,23 @@ public class AnaAdapterTests
         AnaRequestBuilder.MapPaymentMode(mode).Should().Be(expected);
     }
 
+    [Theory]
+    [InlineData(ValuationType.Commercial, "0")]
+    [InlineData(ValuationType.CommercialPlus10, "0")]
+    [InlineData(ValuationType.Agreed, "250000")]
+    [InlineData(ValuationType.AgreedPlus10, "250000")]
+    [InlineData(ValuationType.Invoice, "250000")]
+    public void Coverage_02_sa_attribute_sent_only_when_valuation_type_requires_it(ValuationType valuation, string expected)
+    {
+        // cobertura id="02" (Daños Materiales) lleva sa con el SumInsured; presente solo en Amplia.
+        var req = SampleRequest(PackageCode.Amplia) with { ValuationType = valuation, SumInsured = 250000m };
+        var xml = AnaRequestBuilder.BuildTransaccionesXml(req, "09002");
+        var doc = XDocument.Parse(xml);
+
+        var dm = doc.Descendants("cobertura").Single(c => c.Attribute("id")!.Value == "02");
+        dm.Attribute("sa")!.Value.Should().Be(expected);
+    }
+
     [Fact]
     public void Parses_successful_response()
     {

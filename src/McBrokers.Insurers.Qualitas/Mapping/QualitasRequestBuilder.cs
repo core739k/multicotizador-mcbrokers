@@ -119,7 +119,9 @@ public static class QualitasRequestBuilder
 
     private static IEnumerable<XElement> BuildCoverages(InsurerQuoteRequest req)
     {
-        var sumaVF = FormatMoney(req.SumInsured);
+        // SumInsured solo viaja cuando ValuationType es Agreed/AgreedPlus10/Invoice.
+        // Para Commercial/CommercialPlus10 Quálitas calcula desde su tarifa interna.
+        var sumaVF = req.ValuationType.ShouldSendSumInsured() ? FormatMoney(req.SumInsured) : "0";
         var tipoSuma = MapValuation(req.ValuationType);
 
         // 01 Daños Materiales — solo Amplia
