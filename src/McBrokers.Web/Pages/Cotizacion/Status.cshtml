@@ -12,7 +12,17 @@
 else
 {
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>Cotización <code>@Model.View.CorrelationId</code></h2>
+        @if (Model.View.Vehicle is not null)
+        {
+            var v = Model.View.Vehicle;
+            <h2 class="mb-0">COTIZACIÓN DEL VEHÍCULO @v.Year @v.Brand @v.Model @v.Version</h2>
+        }
+        else
+        {
+            @* Vehicle puede ser null si el master fue borrado del catálogo
+               después de cotizar. Fallback al correlation-id como referencia. *@
+            <h2 class="mb-0">Cotización <code>@Model.View.CorrelationId</code></h2>
+        }
         <span class="badge bg-@StatusColor(Model.View.Status) fs-6">@Model.View.Status</span>
     </div>
 
