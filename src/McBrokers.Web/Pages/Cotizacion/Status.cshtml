@@ -1,5 +1,6 @@
 @page "{id:guid}"
 @model McBrokers.Web.Pages.Cotizacion.StatusModel
+@using McBrokers.Application.Quotations
 @using McBrokers.Domain.Quotations
 @{
     ViewData["Title"] = $"Cotización {Model.View?.Id.ToString().Substring(0, 8) ?? ""}";
@@ -23,7 +24,7 @@ else
                después de cotizar. Fallback al correlation-id como referencia. *@
             <h2 class="mb-0">Cotización <code>@Model.View.CorrelationId</code></h2>
         }
-        <span class="badge bg-@StatusColor(Model.View.Status) fs-6">@Model.View.Status</span>
+        <span class="badge bg-@StatusColor(Model.View.Status) fs-6">@StatusLabels.Spanish(Model.View.Status)</span>
     </div>
 
     <p class="text-muted">
@@ -51,7 +52,7 @@ else
                                      class="quote-result-logo" />
                             }
                             <span>@(r.InsurerName ?? "Aseguradora")</span>
-                            <span class="badge bg-@StatusColor(r.Status) ms-2">@r.Status</span>
+                            <span class="badge bg-@StatusColor(r.Status) ms-2">@StatusLabels.Spanish(r.Status)</span>
                         </h5>
                         @if (r.Status == QuotationInsurerStatus.Succeeded)
                         {
