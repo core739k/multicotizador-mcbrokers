@@ -41,7 +41,9 @@ public sealed record QuotationResultView(
     decimal? Fees,
     int LatencyMs,
     string? ExternalQuoteRef,
-    IReadOnlyList<CoverageBadge> CoverageBadges);
+    IReadOnlyList<CoverageBadge> CoverageBadges,
+    int Version,
+    QuotationInsurerOverrides? Overrides);
 
 public sealed class GetQuotationStatus
 {
@@ -77,7 +79,9 @@ public sealed class GetQuotationStatus
             SumInsured: q.SumInsured,
             Vehicle: vehicle,
             Deducibles: ParseDeducibles(q.CustomerSnapshotJson),
-            Results: q.Results.Select(r => ProjectResult(r, byId, q.Package)).ToList());
+            // Solo los results vigentes — los superseded por re-cotización siguen en
+            // la BD para auditoría pero no se muestran en la pantalla.
+            Results: q.Results.Where(r => r.IsCurrent).Select(r => ProjectResult(r, byId, q.Package)).ToList());
     }
 
     private static QuotationResultView ProjectResult(
@@ -109,7 +113,9 @@ public sealed class GetQuotationStatus
             r.ErrorCode, r.ErrorMessageHuman,
             r.PremiumTotal, r.PremiumNet, r.Tax, r.Fees,
             r.LatencyMs, r.ExternalQuoteRef,
-            coverageBadges);
+            coverageBadges,
+            r.Version,
+            r.Overrides);
     }
 
     // Parser tolerante: snapshots viejos o malformados devuelven null sin crashear.

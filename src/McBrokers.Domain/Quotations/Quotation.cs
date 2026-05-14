@@ -98,6 +98,42 @@ public sealed class Quotation
         RecomputeStatus();
     }
 
+    // Retorna el resultado vigente para una aseguradora (versión más alta con
+    // IsCurrent=true). Lo usa el caso de uso RequoteInsurerResult para
+    // calcular la siguiente Version y aplicar la política de supersede.
+    public QuotationInsurerResult? CurrentResultFor(Guid insurerId) =>
+        _results.FirstOrDefault(r => r.InsurerId == insurerId && r.IsCurrent);
+
+    // Política de re-cotización: marca el resultado vigente previo como
+    // superseded y agrega el nuevo. Quotation se mantiene como única fuente
+    // de verdad para la invariante "a lo más un IsCurrent por aseguradora".
+    public Result<QuotationInsurerResult> SupersedeAndRecord(QuotationInsurerResult newResult)
+    {
+        if (newResult.QuotationId != Id)
+        {
+            return Result<QuotationInsurerResult>.Failure(
+                $"Result belongs to quotation '{newResult.QuotationId}', not this one ('{Id}').");
+        }
+
+        var prior = CurrentResultFor(newResult.InsurerId);
+        if (prior is null)
+        {
+            return Result<QuotationInsurerResult>.Failure(
+                "Cannot supersede — no current result for this insurer. Use RecordResult for the initial result.");
+        }
+
+        if (newResult.Version != prior.Version + 1)
+        {
+            return Result<QuotationInsurerResult>.Failure(
+                $"New result version must be {prior.Version + 1} (one above the prior), got {newResult.Version}.");
+        }
+
+        prior.Supersede();
+        _results.Add(newResult);
+        RecomputeStatus();
+        return Result<QuotationInsurerResult>.Success(newResult);
+    }
+
     /// <summary>
     /// Llamado por el repositorio al cargar desde BD. Reconstruye los results en memoria
     /// y recomputa el Status para mantener invariantes.
@@ -111,19 +147,23 @@ public sealed class Quotation
 
     private void RecomputeStatus()
     {
-        if (ExpectedResultsCount == 0 || _results.Count == 0)
+        // Status se computa solo sobre los results vigentes — los superseded
+        // por re-cotización no cuentan para el progreso ni para Completed/Failed.
+        var currentCount = _results.Count(r => r.IsCurrent);
+
+        if (ExpectedResultsCount == 0 || currentCount == 0)
         {
             Status = QuotationStatus.Pending;
             return;
         }
 
-        if (_results.Count < ExpectedResultsCount)
+        if (currentCount < ExpectedResultsCount)
         {
             Status = QuotationStatus.Partial;
             return;
         }
 
-        var anySucceeded = _results.Any(r => r.Status == QuotationInsurerStatus.Succeeded);
+        var anySucceeded = _results.Any(r => r.IsCurrent && r.Status == QuotationInsurerStatus.Succeeded);
         Status = anySucceeded ? QuotationStatus.Completed : QuotationStatus.Failed;
     }
 }

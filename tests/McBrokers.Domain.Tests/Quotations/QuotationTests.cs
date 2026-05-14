@@ -123,4 +123,111 @@ public class QuotationTests
 
         q.Status.Should().Be(QuotationStatus.Failed);
     }
+
+    [Fact]
+    public void CurrentResultFor_returns_null_when_no_result_for_insurer()
+    {
+        var q = BuildPending();
+        q.CurrentResultFor(InsurerId).Should().BeNull();
+    }
+
+    [Fact]
+    public void CurrentResultFor_returns_the_only_result_for_that_insurer()
+    {
+        var q = BuildPending();
+        var r = QuotationInsurerResult.SucceededResult(
+            q.Id, InsurerId, 100m, 80m, 16m, 4m, 100, "x", null, null, Now).Value;
+        q.RecordResult(r);
+
+        q.CurrentResultFor(InsurerId).Should().Be(r);
+    }
+
+    [Fact]
+    public void SupersedeAndRecord_replaces_current_result_and_keeps_history()
+    {
+        var q = BuildPending();
+        q.ExpectResultsFrom(1);
+        var first = QuotationInsurerResult.SucceededResult(
+            q.Id, InsurerId, 100m, 80m, 16m, 4m, 100, "v1", null, null, Now).Value;
+        q.RecordResult(first);
+
+        var overrides = new QuotationInsurerOverrides(
+            null, ValuationType.Invoice, 10m, 15m, 300_000m);
+        var second = QuotationInsurerResult.SucceededRequoteResult(
+            q.Id, InsurerId, 200m, 160m, 32m, 8m, 90, "v2",
+            null, null, Now, version: 2, overrides).Value;
+
+        var outcome = q.SupersedeAndRecord(second);
+
+        outcome.IsSuccess.Should().BeTrue();
+        first.IsCurrent.Should().BeFalse();
+        second.IsCurrent.Should().BeTrue();
+        q.Results.Should().HaveCount(2, because: "the history is preserved");
+        q.CurrentResultFor(InsurerId).Should().Be(second);
+        q.Status.Should().Be(QuotationStatus.Completed,
+            because: "the current count for the only expected insurer is still 1");
+    }
+
+    [Fact]
+    public void SupersedeAndRecord_fails_when_no_prior_current()
+    {
+        var q = BuildPending();
+        var overrides = new QuotationInsurerOverrides(null, ValuationType.Agreed, null, null, null);
+        var requote = QuotationInsurerResult.SucceededRequoteResult(
+            q.Id, InsurerId, 100m, 80m, 16m, 4m, 100, "x",
+            null, null, Now, version: 2, overrides).Value;
+
+        var outcome = q.SupersedeAndRecord(requote);
+
+        outcome.IsSuccess.Should().BeFalse();
+    }
+
+    [Fact]
+    public void SupersedeAndRecord_fails_when_version_is_not_prior_plus_one()
+    {
+        var q = BuildPending();
+        var first = QuotationInsurerResult.SucceededResult(
+            q.Id, InsurerId, 100m, 80m, 16m, 4m, 100, "v1", null, null, Now).Value;
+        q.RecordResult(first);
+
+        var overrides = new QuotationInsurerOverrides(null, ValuationType.Agreed, null, null, null);
+        // Salta de 1 a 3 — debería fallar.
+        var skipped = QuotationInsurerResult.SucceededRequoteResult(
+            q.Id, InsurerId, 100m, 80m, 16m, 4m, 100, "v3",
+            null, null, Now, version: 3, overrides).Value;
+
+        var outcome = q.SupersedeAndRecord(skipped);
+
+        outcome.IsSuccess.Should().BeFalse();
+        first.IsCurrent.Should().BeTrue(because: "the failed supersede must not mutate state");
+    }
+
+    [Fact]
+    public void Status_ignores_superseded_results_in_recompute()
+    {
+        var q = BuildPending();
+        q.ExpectResultsFrom(2);
+        var insurerA = Guid.NewGuid();
+        var insurerB = Guid.NewGuid();
+
+        // A: éxito v1
+        q.RecordResult(QuotationInsurerResult.SucceededResult(
+            q.Id, insurerA, 100m, 80m, 16m, 4m, 100, "a", null, null, Now).Value);
+        // B: falla v1
+        q.RecordResult(QuotationInsurerResult.FailedResult(
+            q.Id, insurerB, QuotationInsurerStatus.InsurerDown, ErrorCategory.InsurerDown,
+            "TIMEOUT", "Sin respuesta", 30000, null, null, Now).Value);
+        q.Status.Should().Be(QuotationStatus.Completed,
+            because: "any succeeded among 2 expected results => Completed");
+
+        // Re-cotización de A con overrides → marca v1 superseded, agrega v2 también éxito.
+        var overrides = new QuotationInsurerOverrides(null, ValuationType.Invoice, null, null, null);
+        var v2 = QuotationInsurerResult.SucceededRequoteResult(
+            q.Id, insurerA, 200m, 160m, 32m, 8m, 90, "a2",
+            null, null, Now, version: 2, overrides).Value;
+        q.SupersedeAndRecord(v2);
+
+        // Status sigue Completed: 2 IsCurrent (A v2 + B v1), uno succeeded.
+        q.Status.Should().Be(QuotationStatus.Completed);
+    }
 }

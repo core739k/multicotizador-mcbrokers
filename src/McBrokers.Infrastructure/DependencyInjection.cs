@@ -144,6 +144,7 @@ public static class DependencyInjection
         // para enriquecer el view con datos del vehículo.
         services.AddScoped<GetQuotationStatus>();
         services.AddScoped<ProcessQuotation>();
+        services.AddScoped<RequoteInsurerResult>();
         services.AddScoped<McBrokers.Application.Emissions.EmitPolicy>();
 
         // DataProtection — keyring local en %LOCALAPPDATA%\ASP.NET\DataProtection-Keys.

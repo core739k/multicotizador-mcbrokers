@@ -58,10 +58,28 @@ public class QuotationInsurerResultConfiguration : IEntityTypeConfiguration<Quot
         builder.Property(r => r.ResponseBlobRef).HasMaxLength(500);
         builder.Property(r => r.CreatedAt).IsRequired();
 
+        builder.Property(r => r.Version).IsRequired().HasDefaultValue(1);
+        builder.Property(r => r.IsCurrent).IsRequired().HasDefaultValue(true);
+
+        // Overrides como columnas planas (owned entity). 5 nullables sobre el
+        // hot path es aceptable; facilita queries y reportes sin tener que
+        // deserializar JSON.
+        builder.OwnsOne(r => r.Overrides, o =>
+        {
+            o.Property(x => x.VehicleMasterId).HasColumnName("Override_VehicleMasterId");
+            o.Property(x => x.Valuation).HasConversion<string>().HasMaxLength(30).HasColumnName("Override_Valuation");
+            o.Property(x => x.MaterialDamagesDeductiblePct).HasPrecision(5, 2).HasColumnName("Override_DMPct");
+            o.Property(x => x.RobberyDeductiblePct).HasPrecision(5, 2).HasColumnName("Override_RTPct");
+            o.Property(x => x.MedicalExpensesSumInsured).HasPrecision(18, 2).HasColumnName("Override_GMOSumInsured");
+        });
+
         builder.HasIndex(r => r.QuotationId).HasDatabaseName("IX_QuotationInsurerResults_QuotationId");
+        // Único solo para resultados vigentes — permite versiones múltiples por
+        // (QuotationId, InsurerId) mientras solo una tenga IsCurrent=true.
         builder.HasIndex(r => new { r.QuotationId, r.InsurerId })
             .IsUnique()
-            .HasDatabaseName("UX_QuotationInsurerResults_Quotation_Insurer");
+            .HasFilter("[IsCurrent] = 1")
+            .HasDatabaseName("UX_QuotationInsurerResults_Quotation_Insurer_Current");
     }
 }
 
