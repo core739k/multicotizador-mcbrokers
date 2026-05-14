@@ -1,6 +1,7 @@
 @page "{id:guid}"
 @model McBrokers.Web.Pages.Cotizacion.StatusModel
 @using McBrokers.Application.Quotations
+@using McBrokers.Domain.Insurers
 @using McBrokers.Domain.Quotations
 @{
     ViewData["Title"] = $"Cotización {Model.View?.Id.ToString().Substring(0, 8) ?? ""}";
@@ -138,41 +139,61 @@ else
                                 </select>
                             </div>
 
-                            <div class="col-md-1">
-                                <label class="form-label text-muted small mb-1">DM</label>
-                                <select name="dmPct" class="form-select form-select-sm"
-                                        onchange="this.form.submit()">
-                                    @foreach (var d in Model.AvailableDMPct)
-                                    {
-                                        if (d == effDMPct)
+                            @* AXA DXN tiene valores fijos por aseguradora: DM=5%, RT=10%.
+                               Hasta tener los catálogos de MySQL (cat_deducibles +
+                               rel_deducible_valor_estimado), las otras aseguradoras usan
+                               la lista global de DefaultCoverages. *@
+                            @if (r.InsurerCode == InsurerCode.AxaDxn)
+                            {
+                                <div class="col-md-1">
+                                    <div class="text-muted small">DM</div>
+                                    <div>@FormatPercent(effDMPct)</div>
+                                    <input type="hidden" name="dmPct" value="@effDMPct" />
+                                </div>
+                                <div class="col-md-1">
+                                    <div class="text-muted small">RT</div>
+                                    <div>@FormatPercent(effRTPct)</div>
+                                    <input type="hidden" name="rtPct" value="@effRTPct" />
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="col-md-1">
+                                    <label class="form-label text-muted small mb-1">DM</label>
+                                    <select name="dmPct" class="form-select form-select-sm"
+                                            onchange="this.form.submit()">
+                                        @foreach (var d in Model.AvailableDMPct)
                                         {
-                                            <option value="@d" selected>@d%</option>
+                                            if (d == effDMPct)
+                                            {
+                                                <option value="@d" selected>@d%</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@d">@d%</option>
+                                            }
                                         }
-                                        else
-                                        {
-                                            <option value="@d">@d%</option>
-                                        }
-                                    }
-                                </select>
-                            </div>
+                                    </select>
+                                </div>
 
-                            <div class="col-md-1">
-                                <label class="form-label text-muted small mb-1">RT</label>
-                                <select name="rtPct" class="form-select form-select-sm"
-                                        onchange="this.form.submit()">
-                                    @foreach (var d in Model.AvailableRTPct)
-                                    {
-                                        if (d == effRTPct)
+                                <div class="col-md-1">
+                                    <label class="form-label text-muted small mb-1">RT</label>
+                                    <select name="rtPct" class="form-select form-select-sm"
+                                            onchange="this.form.submit()">
+                                        @foreach (var d in Model.AvailableRTPct)
                                         {
-                                            <option value="@d" selected>@d%</option>
+                                            if (d == effRTPct)
+                                            {
+                                                <option value="@d" selected>@d%</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@d">@d%</option>
+                                            }
                                         }
-                                        else
-                                        {
-                                            <option value="@d">@d%</option>
-                                        }
-                                    }
-                                </select>
-                            </div>
+                                    </select>
+                                </div>
+                            }
 
                             <div class="col-md-2">
                                 <label class="form-label text-muted small mb-1">GMO</label>

@@ -17,13 +17,37 @@ public class DefaultCoveragesTests
     }
 
     [Fact]
-    public void Available_sets_default_to_POC_lists()
+    public void Available_sets_default_to_empty_so_appsettings_is_authoritative()
     {
         var sut = new DefaultCoverages();
 
-        sut.AvailableDMPct.Should().Equal(5m, 10m, 15m, 20m);
-        sut.AvailableRTPct.Should().Equal(5m, 10m, 15m, 20m);
-        sut.AvailableGMO.Should().Equal(50_000m, 100_000m, 200_000m, 300_000m, 500_000m);
+        // El binder de Microsoft.Extensions.Configuration concatena arrays
+        // JSON con arrays existentes en el POCO en lugar de reemplazarlos.
+        // Si defaults POCO = [5,10,15,20] y appsettings también = [5,10,15,20],
+        // el resultado es [5,10,15,20,5,10,15,20] — los dropdowns mostraban
+        // las opciones duplicadas. Defaults vacíos eliminan ese bug.
+        sut.AvailableDMPct.Should().BeEmpty();
+        sut.AvailableRTPct.Should().BeEmpty();
+        sut.AvailableGMO.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Binding_does_not_duplicate_arrays_from_appsettings()
+    {
+        var settings = new Dictionary<string, string?>
+        {
+            ["Cotizacion:DefaultCoverages:AvailableDMPct:0"] = "5",
+            ["Cotizacion:DefaultCoverages:AvailableDMPct:1"] = "10",
+            ["Cotizacion:DefaultCoverages:AvailableDMPct:2"] = "15",
+            ["Cotizacion:DefaultCoverages:AvailableDMPct:3"] = "20",
+        };
+        var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+
+        var bound = config.GetSection(DefaultCoverages.ConfigSection).Get<DefaultCoverages>();
+
+        bound!.AvailableDMPct.Should().Equal(5m, 10m, 15m, 20m);
+        bound.AvailableDMPct.Should().HaveCount(4,
+            because: "appsettings provides 4 values and POCO defaults are empty — no duplication");
     }
 
     [Fact]

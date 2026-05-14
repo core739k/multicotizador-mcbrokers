@@ -22,9 +22,14 @@ public sealed class DefaultCoverages
     public decimal CivilLiabilitySumInsured { get; set; } = 3_000_000m;
 
     // Sets disponibles en los selectores de la card de resultados.
-    // Hardcoded en POC; migran a BD (cat_deducibles / cat_valor_estimado /
-    // rel_deducible_valor_estimado) en Fase 2 junto con el ETL del legacy.
-    public decimal[] AvailableDMPct { get; set; } = new[] { 5m, 10m, 15m, 20m };
-    public decimal[] AvailableRTPct { get; set; } = new[] { 5m, 10m, 15m, 20m };
-    public decimal[] AvailableGMO { get; set; } = new[] { 50_000m, 100_000m, 200_000m, 300_000m, 500_000m };
+    // Defaults VACÍOS: el binder de Microsoft.Extensions.Configuration
+    // concatena arrays JSON con arrays existentes en el POCO en lugar de
+    // reemplazarlos. Con defaults [5,10,15,20] + JSON [5,10,15,20] el
+    // resultado era 8 elementos duplicados — los dropdowns mostraban
+    // las opciones dos veces. appsettings.json es la única fuente de
+    // verdad. En Fase 2 estos arrays migran a BD (cat_deducibles,
+    // cat_valor_estimado, rel_deducible_valor_estimado).
+    public decimal[] AvailableDMPct { get; set; } = Array.Empty<decimal>();
+    public decimal[] AvailableRTPct { get; set; } = Array.Empty<decimal>();
+    public decimal[] AvailableGMO { get; set; } = Array.Empty<decimal>();
 }
