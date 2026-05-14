@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <soap:Body>
+    <EmiteAxaResponse xmlns="http://tempuri.org/">
+      <EmiteAxaResult><![CDATA[
+        <RESPUESTA>
+          <url>https://lb1.copsis.com/poliza/AXA-2026-00012345.pdf</url>
+          <inciso>00012345</inciso>
+        </RESPUESTA>
+      ]]></EmiteAxaResult>
+    </EmiteAxaResponse>
+  </soap:Body>
+</soap:Envelope>

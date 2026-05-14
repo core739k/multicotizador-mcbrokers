@@ -45,44 +45,17 @@ public sealed class AxaDxnEmissionExecutor
         // URL enmascarada para logging — d4_key/b son auth, no se loggean en claro.
         var maskedUrl = $"{CopsisBaseUrl}?d4_key={Mask(axa.CopsisD4Key)}&b={Mask(axa.CopsisB)}";
 
-        // Payload JSON — estructura aproximada según Documentación/Servicio AXA — Detalle Técnico.
-        // El campo numCotizacion es el folio devuelto por la cotización (ExternalQuoteRef).
+        // Body que COPSIS espera (replica del legacy CotizacionNegocio.cs:5384-5391):
+        //   { s4_key: <d4_key>, b: <b>, v1: <SOLICITUDEMISION xml> }
+        // El campo del body es "s4_key" (no "d4_key" — el legacy lo escribe así desde hace años,
+        // posible typo del contrato COPSIS que ya está estable). v1 es el XML construido por
+        // AxaDxnCopsisEmitRequestBuilder según el contrato SOLICITUDEMISION.
+        var v1 = AxaDxnCopsisEmitRequestBuilder.BuildSolicitudEmisionXml(request, axa);
         var payload = new
         {
-            numCotizacion = request.ExternalQuoteRef,
-            polizaAutos = axa.PolizaAutos,
-            tarifa = axa.Tarifa,
-            tarifaPickup = axa.TarifaPickup,
-            mesPoliza = axa.BusinessMes,
-            vehiculo = new
-            {
-                marca = request.Vehicle.Brand,
-                modelo = request.Vehicle.Year,
-                version = request.Vehicle.Version,
-                serie = request.Vehicle.SerialNumber,
-                motor = request.Vehicle.EngineNumber,
-                placa = request.Vehicle.Plate,
-            },
-            contratante = new
-            {
-                nombre = request.Contractor.FirstName,
-                apellidoPaterno = request.Contractor.LastNamePaternal,
-                apellidoMaterno = request.Contractor.LastNameMaternal,
-                rfc = request.Contractor.Rfc,
-                calle = request.Contractor.Street,
-                numExterior = request.Contractor.ExteriorNumber,
-                numInterior = request.Contractor.InteriorNumber,
-                colonia = request.Contractor.Neighborhood,
-                ciudad = request.Contractor.City,
-                estado = request.Contractor.StateCode,
-                cp = request.Contractor.PostalCode,
-                telefono = request.Contractor.Phone,
-                email = request.Contractor.Email,
-            },
-            primaNeta = request.PremiumNet,
-            primaTotal = request.PremiumTotal,
-            iva = request.Tax,
-            derechos = request.Fees,
+            s4_key = axa.CopsisD4Key,
+            b = axa.CopsisB,
+            v1 = v1,
         };
 
         var jsonBody = JsonSerializer.Serialize(payload);
@@ -125,7 +98,7 @@ public sealed class AxaDxnEmissionExecutor
                     (int)sw.ElapsedMilliseconds, jsonBody, responseBody);
             }
 
-            var outcome = ParseCopsisResponse(jsonBody, responseBody, (int)sw.ElapsedMilliseconds);
+            var outcome = AxaDxnCopsisEmitResponseParser.Parse(jsonBody, responseBody, (int)sw.ElapsedMilliseconds);
             if (outcome is InsurerEmitOutcome.Failure parseFailure)
             {
                 _logger.LogWarning(
@@ -155,47 +128,6 @@ public sealed class AxaDxnEmissionExecutor
                 $"Error de red contra COPSIS: {ex.Message}",
                 ErrorCategory.InsurerDown,
                 (int)sw.ElapsedMilliseconds, jsonBody, rawResponse: null);
-        }
-    }
-
-    private static InsurerEmitOutcome ParseCopsisResponse(
-        string rawRequest, string rawResponse, int latencyMs)
-    {
-        // Esperamos JSON {"polizaEmitida":"AXA12345","pdfUrl":"https://..."} u objeto con error.
-        try
-        {
-            using var doc = JsonDocument.Parse(rawResponse);
-            var root = doc.RootElement;
-
-            if (root.TryGetProperty("error", out var error) && error.ValueKind != JsonValueKind.Null)
-            {
-                var code = root.TryGetProperty("codigo", out var c) ? c.GetString() ?? "UNKNOWN" : "UNKNOWN";
-                var msg = error.GetString() ?? "COPSIS reportó error sin mensaje.";
-                return Fail(code, msg, ErrorCategory.Business, latencyMs, rawRequest, rawResponse);
-            }
-
-            var polizaNumber = root.TryGetProperty("polizaEmitida", out var p) ? p.GetString() : null;
-            var pdfUrl = root.TryGetProperty("pdfUrl", out var u) ? u.GetString() : null;
-
-            if (string.IsNullOrWhiteSpace(polizaNumber))
-            {
-                return Fail("MISSING_POLIZA",
-                    "COPSIS no devolvió polizaEmitida.",
-                    ErrorCategory.Technical, latencyMs, rawRequest, rawResponse);
-            }
-
-            return new InsurerEmitOutcome.Success(new InsurerEmitResponse(
-                PolicyNumber: polizaNumber!,
-                PdfDownloadUrl: pdfUrl,
-                LatencyMs: latencyMs,
-                RawRequest: rawRequest,
-                RawResponse: rawResponse));
-        }
-        catch (JsonException ex)
-        {
-            return Fail("PARSE_ERROR",
-                $"Respuesta COPSIS no es JSON válido: {ex.Message}",
-                ErrorCategory.Technical, latencyMs, rawRequest, rawResponse);
         }
     }
 

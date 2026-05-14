@@ -101,6 +101,9 @@ public static class DependencyInjection
         // de que existan las aseguradoras para enlazar errores por InsurerId).
         services.AddHostedService<Startup.InsurersSeed>();
         services.AddHostedService<Startup.KnownInsurerErrorsSeed>();
+        // AxaDxnCopsisKeysSeed va después de InsurersSeed (necesita la fila AxaDxn) — actualiza
+        // las llaves COPSIS si quedaron como "pending" (eran placeholder en el seed inicial).
+        services.AddHostedService<Startup.AxaDxnCopsisKeysSeed>();
 
         // Adapters de aseguradora. Cada HttpClient con su política de resilience (Polly v8):
         // - 3 reintentos exponenciales sobre 5xx, timeouts y errores de red.

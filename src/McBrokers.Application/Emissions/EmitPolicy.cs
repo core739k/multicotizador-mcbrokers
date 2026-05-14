@@ -45,6 +45,7 @@ public sealed class EmitPolicy
     private readonly IInsurerConfigRepository _configs;
     private readonly IInsurerCredentialProvider _credentials;
     private readonly IAxaDxnConfigRepository _axaDxnConfigs;
+    private readonly IAgentRepository _agents;
     private readonly IBlobStore _blob;
     private readonly IPdfDownloader _pdfDownloader;
     private readonly IEnumerable<IInsurerAdapter> _adapters;
@@ -63,6 +64,7 @@ public sealed class EmitPolicy
         IInsurerConfigRepository configs,
         IInsurerCredentialProvider credentials,
         IAxaDxnConfigRepository axaDxnConfigs,
+        IAgentRepository agents,
         IBlobStore blob,
         IPdfDownloader pdfDownloader,
         IEnumerable<IInsurerAdapter> adapters,
@@ -80,6 +82,7 @@ public sealed class EmitPolicy
         _configs = configs;
         _credentials = credentials;
         _axaDxnConfigs = axaDxnConfigs;
+        _agents = agents;
         _blob = blob;
         _pdfDownloader = pdfDownloader;
         _adapters = adapters;
@@ -123,7 +126,17 @@ public sealed class EmitPolicy
             await _emissions.AddAsync(emission, cancellationToken).ConfigureAwait(false);
         }
 
-        var emitRequest = BuildEmitRequest(command, ctx);
+        // El XML de cotización previa (sin wrapper soapenv) lo necesita el adapter de AXA DXN
+        // para embebido en SOLICITUDEMISION/CotizaAutoRespuesta. Otros adapters lo ignoran.
+        // Si no podemos leer el blob, seguimos — el builder maneja null con CotizarIncisoResponse vacío.
+        var rawQuoteResponseXml = await ReadRawQuoteResponseAsync(ctx.Result, cancellationToken).ConfigureAwait(false);
+
+        // AgentExternalCode → campo <vendedor> del SOLICITUDEMISION. Cargamos el agente para
+        // tener su AgentCode externo; null si no lo tiene.
+        var agent = await _agents.GetByIdAsync(_currentAgent.AgentId, cancellationToken).ConfigureAwait(false);
+        var agentExternalCode = agent?.AgentCode;
+
+        var emitRequest = BuildEmitRequest(command, ctx, rawQuoteResponseXml, agentExternalCode);
 
         var startedAt = _clock.UtcNow;
         var outcome = await ctx.Adapter.EmitAsync(emitRequest, cancellationToken).ConfigureAwait(false);
@@ -387,7 +400,27 @@ public sealed class EmitPolicy
         }
     }
 
-    private static InsurerEmitRequest BuildEmitRequest(EmitPolicyCommand command, EmissionContext ctx)
+    private async Task<string?> ReadRawQuoteResponseAsync(
+        QuotationInsurerResult result, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(result.ResponseBlobRef)) return null;
+        try
+        {
+            return await _blob.ReadAsync(result.ResponseBlobRef, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            // Si el blob no es accesible no abortamos la emisión; el adapter sigue con
+            // CotizarIncisoResponse vacío y COPSIS probablemente rechazará — pero al menos
+            // queda el rastro del intento.
+            _logger.LogWarning(ex, "EmitPolicy: no se pudo leer blob de cotización {Ref}", result.ResponseBlobRef);
+            return null;
+        }
+    }
+
+    private static InsurerEmitRequest BuildEmitRequest(
+        EmitPolicyCommand command, EmissionContext ctx,
+        string? rawQuoteResponseXml, string? agentExternalCode)
     {
         var contact = new EmissionContactData(
             command.Customer.FirstName,
@@ -403,6 +436,9 @@ public sealed class EmitPolicy
             command.Customer.PostalCode,
             command.Customer.Phone,
             command.Customer.Email);
+
+        // Valuation efectiva: override de la card si existe, sino el valor base de la Quotation.
+        var valuation = ctx.Result.Overrides?.Valuation ?? ctx.Quotation.ValuationType;
 
         return new InsurerEmitRequest(
             CorrelationId: ctx.Quotation.CorrelationId,
@@ -421,6 +457,9 @@ public sealed class EmitPolicy
             PremiumNet: ctx.Result.PremiumNet ?? 0m,
             Tax: ctx.Result.Tax ?? 0m,
             Fees: ctx.Result.Fees ?? 0m,
+            Valuation: valuation,
+            RawQuoteResponseXml: rawQuoteResponseXml,
+            AgentExternalCode: agentExternalCode,
             BusinessConfig: ctx.BusinessConfig);
     }
 
