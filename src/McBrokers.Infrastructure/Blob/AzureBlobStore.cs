@@ -7,12 +7,16 @@ using Microsoft.Extensions.Logging;
 namespace McBrokers.Infrastructure.Blob;
 
 /// <summary>
-/// Implementación Azure Blob Storage. Containers se asumen pre-creados
-/// (ver INFRA_AZURE.md §4). Si quieres auto-crear en dev, agrega
-/// CreateContainerOnDemand=true en config.
+/// Implementación Azure Blob Storage. Usa un único container fijo
+/// (DefaultContainerName) y el path completo va como blob name.
+/// Azure renderiza paths con "/" como carpetas en el explorador, así que
+/// la estructura {year}/{brand}/{model}/{correlationId}/file.xml se ve
+/// igual que en disco local.
 /// </summary>
 public sealed class AzureBlobStore : IBlobStore
 {
+    public const string DefaultContainerName = "quotations";
+
     private readonly BlobServiceClient _serviceClient;
     private readonly ILogger<AzureBlobStore> _logger;
     private readonly bool _createOnDemand;
@@ -25,27 +29,27 @@ public sealed class AzureBlobStore : IBlobStore
     }
 
     public async Task<string> WriteAsync(
-        string container, string blobName, string content,
+        string path, string content,
         IReadOnlyDictionary<string, string>? metadata, CancellationToken cancellationToken)
     {
         var bytes = Encoding.UTF8.GetBytes(content);
-        return await WriteCoreAsync(container, blobName, bytes, "application/xml", metadata, cancellationToken).ConfigureAwait(false);
+        return await WriteCoreAsync(path, bytes, "application/xml", metadata, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<string> WriteBinaryAsync(
-        string container, string blobName, byte[] content,
+        string path, byte[] content,
         IReadOnlyDictionary<string, string>? metadata, CancellationToken cancellationToken)
     {
-        var contentType = blobName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)
+        var contentType = path.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)
             ? "application/pdf"
             : "application/octet-stream";
-        return await WriteCoreAsync(container, blobName, content, contentType, metadata, cancellationToken).ConfigureAwait(false);
+        return await WriteCoreAsync(path, content, contentType, metadata, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<string?> ReadAsync(string reference, CancellationToken cancellationToken)
     {
         // Reference es la URL del blob devuelta en Write* (BlobClient.Uri).
-        // Parseamos {Account}.blob.core.windows.net/{container}/{blob}.
+        // {Account}.blob.core.windows.net/{container}/{...path...}
         if (string.IsNullOrWhiteSpace(reference)) return null;
         if (!Uri.TryCreate(reference, UriKind.Absolute, out var uri)) return null;
 
@@ -61,16 +65,16 @@ public sealed class AzureBlobStore : IBlobStore
     }
 
     private async Task<string> WriteCoreAsync(
-        string container, string blobName, byte[] content, string contentType,
+        string path, byte[] content, string contentType,
         IReadOnlyDictionary<string, string>? metadata, CancellationToken cancellationToken)
     {
-        var containerClient = _serviceClient.GetBlobContainerClient(container);
+        var containerClient = _serviceClient.GetBlobContainerClient(DefaultContainerName);
         if (_createOnDemand)
         {
             await containerClient.CreateIfNotExistsAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
         }
 
-        var blobClient = containerClient.GetBlobClient(blobName);
+        var blobClient = containerClient.GetBlobClient(path);
         using var ms = new MemoryStream(content);
 
         var options = new BlobUploadOptions

@@ -1,3 +1,4 @@
+using McBrokers.Application.Blob;
 using McBrokers.Application.Ports;
 using McBrokers.Domain.Catalog;
 using McBrokers.Domain.Insurers;
@@ -170,8 +171,11 @@ public sealed class RequoteInsurerResult
 
         var outcome = await adapter.QuoteAsync(request, cancellationToken).ConfigureAwait(false);
 
+        // Versión = prior + 1, calculada antes para que el path del blob lleve la versión.
+        var nextVersion = prior.Version + 1;
         var (reqBlob, resBlob) = await PersistBlobsAsync(
-            quotation.CorrelationId, insurer.Code, outcome, cancellationToken).ConfigureAwait(false);
+            quotation.CorrelationId, vehicle, insurer.Code, nextVersion, outcome, cancellationToken)
+            .ConfigureAwait(false);
 
         var overridesSnapshot = new QuotationInsurerOverrides(
             VehicleMasterId: cmd.OverrideVehicleMasterId,
@@ -180,7 +184,6 @@ public sealed class RequoteInsurerResult
             RobberyDeductiblePct: cmd.OverrideRTPct,
             MedicalExpensesSumInsured: cmd.OverrideGMO);
 
-        var nextVersion = prior.Version + 1;
         QuotationInsurerResult newResult;
         if (outcome is InsurerQuoteOutcome.Success s)
         {
@@ -262,7 +265,8 @@ public sealed class RequoteInsurerResult
     }
 
     private async Task<(string? RequestRef, string? ResponseRef)> PersistBlobsAsync(
-        string correlationId, InsurerCode insurerCode, InsurerQuoteOutcome outcome, CancellationToken ct)
+        string correlationId, VehicleMaster vehicle, InsurerCode insurerCode, int version,
+        InsurerQuoteOutcome outcome, CancellationToken ct)
     {
         var (requestXml, responseXml) = outcome switch
         {
@@ -275,19 +279,23 @@ public sealed class RequoteInsurerResult
         {
             ["correlationId"] = correlationId,
             ["insurer"] = insurerCode.ToString(),
-            ["requote"] = "true",
+            ["operation"] = "recotizacion",
+            ["version"] = version.ToString(),
         };
 
+        // Mismo attemptId para request+response, así viajan juntos en el path.
+        var attemptId = Guid.NewGuid().ToString("n");
+
         var reqRef = await _blob.WriteAsync(
-            container: "xml-requests",
-            blobName: $"{insurerCode}/{correlationId}-requote-{Guid.NewGuid():n}-request.xml",
+            path: BlobPaths.Recotizacion(vehicle.Year, vehicle.Brand, vehicle.Model,
+                correlationId, insurerCode, version, attemptId, BlobRole.Request),
             content: requestXml,
             metadata: metadata,
             cancellationToken: ct).ConfigureAwait(false);
 
         var resRef = await _blob.WriteAsync(
-            container: "xml-responses",
-            blobName: $"{insurerCode}/{correlationId}-requote-{Guid.NewGuid():n}-response.xml",
+            path: BlobPaths.Recotizacion(vehicle.Year, vehicle.Brand, vehicle.Model,
+                correlationId, insurerCode, version, attemptId, BlobRole.Response),
             content: responseXml,
             metadata: metadata,
             cancellationToken: ct).ConfigureAwait(false);

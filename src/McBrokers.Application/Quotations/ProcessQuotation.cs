@@ -1,3 +1,4 @@
+using McBrokers.Application.Blob;
 using McBrokers.Application.Ports;
 using McBrokers.Domain.Catalog;
 using McBrokers.Domain.Insurers;
@@ -169,7 +170,7 @@ public sealed class ProcessQuotation
         var outcome = await adapter.QuoteAsync(insurerRequest, cancellationToken).ConfigureAwait(false);
 
         var (requestBlobRef, responseBlobRef) = await PersistBlobsAsync(
-            quotation.CorrelationId, insurer.Code, outcome, cancellationToken).ConfigureAwait(false);
+            quotation.CorrelationId, vehicle, insurer.Code, outcome, cancellationToken).ConfigureAwait(false);
 
         QuotationInsurerResult result;
         if (outcome is InsurerQuoteOutcome.Success s)
@@ -235,7 +236,8 @@ public sealed class ProcessQuotation
     }
 
     private async Task<(string? RequestRef, string? ResponseRef)> PersistBlobsAsync(
-        string correlationId, InsurerCode insurerCode, InsurerQuoteOutcome outcome, CancellationToken ct)
+        string correlationId, VehicleMaster vehicle, InsurerCode insurerCode,
+        InsurerQuoteOutcome outcome, CancellationToken ct)
     {
         var (requestXml, responseXml) = outcome switch
         {
@@ -248,18 +250,19 @@ public sealed class ProcessQuotation
         {
             ["correlationId"] = correlationId,
             ["insurer"] = insurerCode.ToString(),
+            ["operation"] = "cotizacion",
         };
 
         var reqRef = await _blob.WriteAsync(
-            container: "xml-requests",
-            blobName: $"{insurerCode}/{correlationId}-request.xml",
+            path: BlobPaths.Cotizacion(vehicle.Year, vehicle.Brand, vehicle.Model,
+                correlationId, insurerCode, BlobRole.Request),
             content: requestXml,
             metadata: metadata,
             cancellationToken: ct).ConfigureAwait(false);
 
         var resRef = await _blob.WriteAsync(
-            container: "xml-responses",
-            blobName: $"{insurerCode}/{correlationId}-response.xml",
+            path: BlobPaths.Cotizacion(vehicle.Year, vehicle.Brand, vehicle.Model,
+                correlationId, insurerCode, BlobRole.Response),
             content: responseXml,
             metadata: metadata,
             cancellationToken: ct).ConfigureAwait(false);

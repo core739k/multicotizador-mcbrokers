@@ -1,3 +1,4 @@
+using McBrokers.Application.Blob;
 using McBrokers.Application.Ports;
 using McBrokers.Application.Quotations;
 using McBrokers.Domain.Emissions;
@@ -131,10 +132,11 @@ public sealed class EmitPolicy
         // Persistir req/res del adapter de emisión simétrico a
         // ProcessQuotation.PersistBlobsAsync. Sin esto la respuesta de COPSIS
         // se descartaba al terminar el request y no quedaba rastro para auditar
-        // rechazos. Sufijo -emit- distingue del blob de cotización; un guid
-        // permite varios intentos sin colisión.
+        // rechazos. Path estructurado por año/marca/modelo/correlationId via
+        // BlobPaths.Emision; attemptId permite varios intentos sin colisión.
         var (emitReqBlob, emitResBlob) = await PersistEmitBlobsAsync(
-            ctx.Quotation.CorrelationId, ctx.Insurer.Code, outcome, cancellationToken).ConfigureAwait(false);
+            ctx.Quotation.CorrelationId, ctx.Vehicle, ctx.Insurer.Code, outcome, cancellationToken)
+            .ConfigureAwait(false);
         _logger.LogInformation(
             "EmitPolicy: blobs persistidos correlation={Correlation} insurer={Insurer} req={Req} res={Res}",
             ctx.Quotation.CorrelationId, ctx.Insurer.Code, emitReqBlob, emitResBlob);
@@ -188,8 +190,8 @@ public sealed class EmitPolicy
                     .DownloadAsync(success.Response.PdfDownloadUrl!, cancellationToken)
                     .ConfigureAwait(false);
                 pdfBlobRef = await _blob.WriteBinaryAsync(
-                    container: "pdf-policies",
-                    blobName: $"{ctx.Insurer.Code}/{success.Response.PolicyNumber}.pdf",
+                    path: BlobPaths.PolizaPdf(ctx.Vehicle.Year, ctx.Vehicle.Brand, ctx.Vehicle.Model,
+                        ctx.Quotation.CorrelationId, ctx.Insurer.Code),
                     content: bytes,
                     metadata: new Dictionary<string, string>
                     {
@@ -222,7 +224,8 @@ public sealed class EmitPolicy
     }
 
     private async Task<(string? RequestRef, string? ResponseRef)> PersistEmitBlobsAsync(
-        string correlationId, InsurerCode insurerCode, InsurerEmitOutcome outcome, CancellationToken ct)
+        string correlationId, Domain.Catalog.VehicleMaster vehicle, InsurerCode insurerCode,
+        InsurerEmitOutcome outcome, CancellationToken ct)
     {
         var (requestBody, responseBody) = outcome switch
         {
@@ -243,7 +246,7 @@ public sealed class EmitPolicy
         {
             ["correlationId"] = correlationId,
             ["insurer"] = insurerCode.ToString(),
-            ["operation"] = "emit",
+            ["operation"] = "emision",
         };
 
         string? reqRef = null;
@@ -251,8 +254,8 @@ public sealed class EmitPolicy
         if (!string.IsNullOrWhiteSpace(requestBody))
         {
             reqRef = await _blob.WriteAsync(
-                container: "xml-requests",
-                blobName: $"{insurerCode}/{correlationId}-emit-{attemptId}-request.xml",
+                path: BlobPaths.Emision(vehicle.Year, vehicle.Brand, vehicle.Model,
+                    correlationId, insurerCode, attemptId, BlobRole.Request),
                 content: requestBody,
                 metadata: metadata,
                 cancellationToken: ct).ConfigureAwait(false);
@@ -260,8 +263,8 @@ public sealed class EmitPolicy
         if (!string.IsNullOrWhiteSpace(responseBody))
         {
             resRef = await _blob.WriteAsync(
-                container: "xml-responses",
-                blobName: $"{insurerCode}/{correlationId}-emit-{attemptId}-response.xml",
+                path: BlobPaths.Emision(vehicle.Year, vehicle.Brand, vehicle.Model,
+                    correlationId, insurerCode, attemptId, BlobRole.Response),
                 content: responseBody,
                 metadata: metadata,
                 cancellationToken: ct).ConfigureAwait(false);

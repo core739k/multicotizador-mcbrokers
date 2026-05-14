@@ -26,8 +26,7 @@ public class LocalDiskBlobStoreTests : IDisposable
         var store = new LocalDiskBlobStore(_root, NullLogger<LocalDiskBlobStore>.Instance);
         var content = "<?xml version=\"1.0\"?><sample>data</sample>";
         var reference = await store.WriteAsync(
-            container: "xml-requests",
-            blobName: "TestInsurer/sample.xml",
+            path: "2024/VW/JETTA/corr-abc/cotizacion-Gnp-request.xml",
             content: content,
             metadata: null,
             cancellationToken: CancellationToken.None);
@@ -35,6 +34,18 @@ public class LocalDiskBlobStoreTests : IDisposable
         var readBack = await store.ReadAsync(reference, CancellationToken.None);
 
         readBack.Should().Be(content);
+    }
+
+    [Fact]
+    public async Task Write_creates_nested_directories_for_path()
+    {
+        var store = new LocalDiskBlobStore(_root, NullLogger<LocalDiskBlobStore>.Instance);
+        await store.WriteAsync(
+            path: "2024/ACURA/MDX/abc/cotizacion-Gnp-request.xml",
+            content: "data", metadata: null, cancellationToken: CancellationToken.None);
+
+        File.Exists(Path.Combine(_root, "2024", "ACURA", "MDX", "abc", "cotizacion-Gnp-request.xml"))
+            .Should().BeTrue();
     }
 
     [Fact]
@@ -52,7 +63,7 @@ public class LocalDiskBlobStoreTests : IDisposable
         // Si alguien guarda la referencia desnuda en BD (sin file://), debería
         // funcionar igual — pragmatismo defensivo.
         var store = new LocalDiskBlobStore(_root, NullLogger<LocalDiskBlobStore>.Instance);
-        var reference = await store.WriteAsync("c", "b.txt", "hola", null, CancellationToken.None);
+        var reference = await store.WriteAsync("2024/X/Y/c/file.txt", "hola", null, CancellationToken.None);
 
         var bare = reference.Replace("file://", string.Empty);
         var content = await store.ReadAsync(bare, CancellationToken.None);

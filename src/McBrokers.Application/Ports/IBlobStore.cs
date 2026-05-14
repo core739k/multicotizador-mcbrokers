@@ -3,21 +3,22 @@ namespace McBrokers.Application.Ports;
 public interface IBlobStore
 {
     /// <summary>
-    /// Persiste un blob de texto (XML/JSON/etc) y devuelve la referencia para guardar en BD.
+    /// Persiste un blob de texto (XML/JSON/etc) bajo el path indicado y
+    /// devuelve la referencia (URL local o Azure) para guardar en BD.
+    /// path es la ruta completa relativa al root — los callers la componen
+    /// usando McBrokers.Application.Blob.BlobPaths para mantener convención.
     /// </summary>
     Task<string> WriteAsync(
-        string container,
-        string blobName,
+        string path,
         string content,
         IReadOnlyDictionary<string, string>? metadata,
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Persiste un blob binario (PDF, imagen, etc) y devuelve la referencia.
+    /// Persiste un blob binario (PDF, imagen, etc) bajo el path indicado.
     /// </summary>
     Task<string> WriteBinaryAsync(
-        string container,
-        string blobName,
+        string path,
         byte[] content,
         IReadOnlyDictionary<string, string>? metadata,
         CancellationToken cancellationToken);

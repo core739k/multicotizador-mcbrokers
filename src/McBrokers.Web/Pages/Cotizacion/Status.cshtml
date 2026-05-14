@@ -145,21 +145,23 @@ else
                                la lista global de DefaultCoverages. *@
                             @if (r.InsurerCode == InsurerCode.AxaDxn)
                             {
-                                <div class="col-md-1">
-                                    <div class="text-muted small">DM</div>
-                                    <div>@FormatPercent(effDMPct)</div>
+                                <div class="col-md-2">
+                                    <label class="form-label text-muted small mb-1">Daños Materiales</label>
+                                    <input type="text" class="form-control form-control-sm"
+                                           value="@FormatPercent(effDMPct)" readonly tabindex="-1" />
                                     <input type="hidden" name="dmPct" value="@effDMPct" />
                                 </div>
-                                <div class="col-md-1">
-                                    <div class="text-muted small">RT</div>
-                                    <div>@FormatPercent(effRTPct)</div>
+                                <div class="col-md-2">
+                                    <label class="form-label text-muted small mb-1">Robo Total</label>
+                                    <input type="text" class="form-control form-control-sm"
+                                           value="@FormatPercent(effRTPct)" readonly tabindex="-1" />
                                     <input type="hidden" name="rtPct" value="@effRTPct" />
                                 </div>
                             }
                             else
                             {
-                                <div class="col-md-1">
-                                    <label class="form-label text-muted small mb-1">DM</label>
+                                <div class="col-md-2">
+                                    <label class="form-label text-muted small mb-1">Daños Materiales</label>
                                     <select name="dmPct" class="form-select form-select-sm"
                                             onchange="this.form.submit()">
                                         @foreach (var d in Model.AvailableDMPct)
@@ -176,8 +178,8 @@ else
                                     </select>
                                 </div>
 
-                                <div class="col-md-1">
-                                    <label class="form-label text-muted small mb-1">RT</label>
+                                <div class="col-md-2">
+                                    <label class="form-label text-muted small mb-1">Robo Total</label>
                                     <select name="rtPct" class="form-select form-select-sm"
                                             onchange="this.form.submit()">
                                         @foreach (var d in Model.AvailableRTPct)
@@ -196,7 +198,7 @@ else
                             }
 
                             <div class="col-md-2">
-                                <label class="form-label text-muted small mb-1">GMO</label>
+                                <label class="form-label text-muted small mb-1">Gastos Médicos Ocupantes</label>
                                 <select name="gmo" class="form-select form-select-sm"
                                         onchange="this.form.submit()">
                                     @foreach (var g in Model.AvailableGMO)
@@ -214,8 +216,9 @@ else
                             </div>
 
                             <div class="col-md-2">
-                                <div class="text-muted small">RC</div>
-                                <div>@FormatMoney(rcMonto)</div>
+                                <label class="form-label text-muted small mb-1">Responsabilidad Civil</label>
+                                <input type="text" class="form-control form-control-sm"
+                                       value="@FormatMoney(rcMonto)" readonly tabindex="-1" />
                             </div>
                         </form>
 
@@ -229,10 +232,26 @@ else
                                 }
                             </div>
                         }
-                        <div class="text-muted small mt-2">
-                            Ref: <code>@r.ExternalQuoteRef</code> · @r.LatencyMs ms ·
-                            Prima neta $@r.PremiumNet?.ToString("N2") · IVA $@r.Tax?.ToString("N2") · Derechos $@r.Fees?.ToString("N2")
+                        @* Desglose de prima — mismo estilo de label+input readonly que
+                           los selectores de cobertura para alineación visual. *@
+                        <div class="row g-2 mt-2">
+                            <div class="col-md-2">
+                                <label class="form-label text-muted small mb-1">Prima neta</label>
+                                <input type="text" class="form-control form-control-sm"
+                                       value="$@r.PremiumNet?.ToString("N2")" readonly tabindex="-1" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-muted small mb-1">IVA</label>
+                                <input type="text" class="form-control form-control-sm"
+                                       value="$@r.Tax?.ToString("N2")" readonly tabindex="-1" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-muted small mb-1">Derechos</label>
+                                <input type="text" class="form-control form-control-sm"
+                                       value="$@r.Fees?.ToString("N2")" readonly tabindex="-1" />
+                            </div>
                         </div>
+                        <div class="text-muted small mt-1">@r.LatencyMs ms</div>
                     }
                     else
                     {
