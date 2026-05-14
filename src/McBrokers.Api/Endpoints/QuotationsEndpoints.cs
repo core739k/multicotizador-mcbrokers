@@ -12,8 +12,37 @@ public static class QuotationsEndpoints
 
         group.MapPost("", CreateQuotation);
         group.MapGet("/{id:guid}", GetStatus);
+        group.MapPost("/{id:guid}/results/{insurerId:guid}/requote", Requote);
 
         return app;
+    }
+
+    private static async Task<IResult> Requote(
+        Guid id,
+        Guid insurerId,
+        RequoteBody body,
+        RequoteInsurerResult handler,
+        CancellationToken ct)
+    {
+        var cmd = new RequoteInsurerCommand(
+            QuotationId: id,
+            InsurerId: insurerId,
+            OverrideVehicleMasterId: body.VehicleMasterId,
+            OverrideValuation: body.Valuation,
+            OverrideDMPct: body.DMPct,
+            OverrideRTPct: body.RTPct,
+            OverrideGMO: body.GMO);
+
+        var result = await handler.ExecuteAsync(cmd, ct);
+        if (!result.IsSuccess)
+        {
+            var status = result.Error.Contains("not found", StringComparison.OrdinalIgnoreCase)
+                ? StatusCodes.Status404NotFound
+                : StatusCodes.Status400BadRequest;
+            return Results.Problem(result.Error, statusCode: status);
+        }
+
+        return Results.Ok(result.Value);
     }
 
     private static async Task<IResult> CreateQuotation(
@@ -42,3 +71,10 @@ public static class QuotationsEndpoints
         return view is null ? Results.NotFound() : Results.Ok(view);
     }
 }
+
+public sealed record RequoteBody(
+    Guid? VehicleMasterId,
+    McBrokers.Domain.Quotations.ValuationType? Valuation,
+    decimal? DMPct,
+    decimal? RTPct,
+    decimal? GMO);
