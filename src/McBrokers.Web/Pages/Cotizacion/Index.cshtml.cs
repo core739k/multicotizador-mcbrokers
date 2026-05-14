@@ -107,13 +107,20 @@ public class IndexModel : PageModel
             },
         });
 
+        // SumInsured placeholder — el form ya no lo expone. Para Commercial
+        // (default) los adapters mandan "0" al WS y la aseguradora calcula.
+        // Cuando agreguemos selector de ValuationType al wizard + override
+        // de SumInsured por card en la pantalla de resultados (Fase 2),
+        // este placeholder dejará de aplicar.
+        const decimal SumInsuredPlaceholder = 250_000m;
+
         var result = await _request.ExecuteAsync(
             new RequestQuotationCommand(
                 Input.VehicleMasterId,
                 Input.Package,
                 Input.PaymentMode,
                 Input.ValuationType,
-                Input.SumInsured,
+                SumInsuredPlaceholder,
                 Input.PostalCode,
                 snapshot),
             correlationId: null,
@@ -155,7 +162,13 @@ public class IndexModel : PageModel
         [Required] public PackageCode Package { get; set; } = PackageCode.Amplia;
         [Required] public PaymentMode PaymentMode { get; set; } = PaymentMode.Annual;
         [Required] public ValuationType ValuationType { get; set; } = ValuationType.Commercial;
-        [Range(0.01, double.MaxValue)] public decimal SumInsured { get; set; } = 250_000m;
+        // SumInsured se quitó del form: para ValuationType=Commercial (caso
+        // default del wizard) la aseguradora calcula el valor desde su
+        // tarifa interna y el SumInsured que mandamos es ignorado (ver
+        // ValuationTypeExtensions.ShouldSendSumInsured — Commercial → "0").
+        // Para Agreed/Invoice, el vendedor lo ajustará desde el card de
+        // resultado (override por aseguradora) en una iteración futura.
+        // Mientras tanto un placeholder permite construir el comando.
         [Required, RegularExpression(@"^\d{5}$")] public string PostalCode { get; set; } = "06700";
         [Required] public string FirstName { get; set; } = string.Empty;
         [Required] public string LastNamePaternal { get; set; } = string.Empty;
