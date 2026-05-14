@@ -3,6 +3,7 @@ using System.Text.Json;
 using McBrokers.Application.Admin;
 using McBrokers.Application.Catalog;
 using McBrokers.Application.Quotations;
+using McBrokers.Application.Validation;
 using McBrokers.Domain.Quotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -158,10 +159,22 @@ public class IndexModel : PageModel
 
     public class InputModel
     {
-        [Required] public Guid VehicleMasterId { get; set; }
-        [Required] public PackageCode Package { get; set; } = PackageCode.Amplia;
-        [Required] public PaymentMode PaymentMode { get; set; } = PaymentMode.Annual;
-        [Required] public ValuationType ValuationType { get; set; } = ValuationType.Commercial;
+        [Display(Name = "Vehículo")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        public Guid VehicleMasterId { get; set; }
+
+        [Display(Name = "Paquete")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        public PackageCode Package { get; set; } = PackageCode.Amplia;
+
+        [Display(Name = "Forma de pago")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        public PaymentMode PaymentMode { get; set; } = PaymentMode.Annual;
+
+        [Display(Name = "Tipo de valor")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        public ValuationType ValuationType { get; set; } = ValuationType.Commercial;
+
         // SumInsured se quitó del form: para ValuationType=Commercial (caso
         // default del wizard) la aseguradora calcula el valor desde su
         // tarifa interna y el SumInsured que mandamos es ignorado (ver
@@ -169,11 +182,27 @@ public class IndexModel : PageModel
         // Para Agreed/Invoice, el vendedor lo ajustará desde el card de
         // resultado (override por aseguradora) en una iteración futura.
         // Mientras tanto un placeholder permite construir el comando.
-        [Required, RegularExpression(@"^\d{5}$")] public string PostalCode { get; set; } = "06700";
-        [Required] public string FirstName { get; set; } = string.Empty;
-        [Required] public string LastNamePaternal { get; set; } = string.Empty;
+
+        [Display(Name = "Código postal")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        [RegularExpression(@"^\d{5}$", ErrorMessage = ValidationMessages.PostalCode)]
+        public string PostalCode { get; set; } = "06700";
+
+        [Display(Name = "Nombre")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Display(Name = "Apellido paterno")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        public string LastNamePaternal { get; set; } = string.Empty;
+
+        [Display(Name = "Apellido materno")]
         public string LastNameMaternal { get; set; } = string.Empty;
+
+        [Display(Name = "Fecha de nacimiento")]
         public DateOnly DateOfBirth { get; set; } = new(1990, 1, 1);
+
+        [Display(Name = "Género")]
         public Gender Gender { get; set; } = Gender.Male;
     }
 }

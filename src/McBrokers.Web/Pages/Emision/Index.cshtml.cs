@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using McBrokers.Application.Emissions;
+using McBrokers.Application.Validation;
 using McBrokers.Domain.Emissions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -65,23 +66,72 @@ public class IndexModel : PageModel
     {
         public Guid QuotationInsurerResultId { get; set; }
 
-        [Required] public string FirstName { get; set; } = string.Empty;
-        [Required] public string LastNamePaternal { get; set; } = string.Empty;
+        [Display(Name = "Nombre")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Display(Name = "Apellido paterno")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        public string LastNamePaternal { get; set; } = string.Empty;
+
+        [Display(Name = "Apellido materno")]
         public string LastNameMaternal { get; set; } = string.Empty;
-        [Required, StringLength(13, MinimumLength = 12)] public string Rfc { get; set; } = string.Empty;
-        [Required, RegularExpression(@"^\d{10}$")] public string Phone { get; set; } = string.Empty;
-        [Required, EmailAddress] public string Email { get; set; } = string.Empty;
 
-        [Required] public string Street { get; set; } = string.Empty;
-        [Required] public string ExteriorNumber { get; set; } = string.Empty;
+        [Display(Name = "RFC")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        [StringLength(13, MinimumLength = 12, ErrorMessage = ValidationMessages.Rfc)]
+        public string Rfc { get; set; } = string.Empty;
+
+        [Display(Name = "Teléfono")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        [RegularExpression(@"^\d{10}$", ErrorMessage = ValidationMessages.Phone)]
+        public string Phone { get; set; } = string.Empty;
+
+        [Display(Name = "Email")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        [EmailAddress(ErrorMessage = ValidationMessages.Email)]
+        public string Email { get; set; } = string.Empty;
+
+        [Display(Name = "Calle")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        public string Street { get; set; } = string.Empty;
+
+        [Display(Name = "Número exterior")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        public string ExteriorNumber { get; set; } = string.Empty;
+
+        [Display(Name = "Número interior")]
         public string? InteriorNumber { get; set; }
-        [Required] public string Neighborhood { get; set; } = string.Empty;
-        [Required] public string City { get; set; } = string.Empty;
-        [Required, StringLength(2, MinimumLength = 2)] public string StateCode { get; set; } = string.Empty;
-        [Required, RegularExpression(@"^\d{5}$")] public string PostalCode { get; set; } = string.Empty;
 
-        [Required] public string Plate { get; set; } = string.Empty;
-        [Required] public string EngineNumber { get; set; } = string.Empty;
-        [Required] public string SerialNumber { get; set; } = string.Empty;
+        [Display(Name = "Colonia")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        public string Neighborhood { get; set; } = string.Empty;
+
+        [Display(Name = "Ciudad/Municipio")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        public string City { get; set; } = string.Empty;
+
+        // StateCode lo puebla el JS de SEPOMEX server-side antes del POST.
+        // No es input directo del vendedor; permanece en el modelo porque el
+        // EmissionContactData del adapter lo recibe.
+        [Display(Name = "Estado")]
+        public string StateCode { get; set; } = string.Empty;
+
+        [Display(Name = "Código postal")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        [RegularExpression(@"^\d{5}$", ErrorMessage = ValidationMessages.PostalCode)]
+        public string PostalCode { get; set; } = string.Empty;
+
+        [Display(Name = "Placas")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        public string Plate { get; set; } = string.Empty;
+
+        [Display(Name = "Número de motor")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        public string EngineNumber { get; set; } = string.Empty;
+
+        [Display(Name = "Número de serie")]
+        [Required(ErrorMessage = ValidationMessages.Required)]
+        public string SerialNumber { get; set; } = string.Empty;
     }
 }
