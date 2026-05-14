@@ -116,12 +116,18 @@ public static class DependencyInjection
         services.AddHttpClient<McBrokers.Insurers.AxaDxn.Mapping.AxaDxnEmissionExecutor>().AddMcBrokersResilience();
 
         // SEPOMEX — autocompletar Estado/Municipio/Colonia desde CP en /Emision.
-        // BaseUrl configurable; el resilience handler reintenta 5xx/timeouts.
+        // BaseUrl configurable via "Sepomex:BaseUrl" en appsettings; trailing slash
+        // obligatorio para que GetAsync("api/sepomex/{cp}") concatene correcto.
         var sepomexBase = configuration["Sepomex:BaseUrl"]
-                       ?? "https://consultarcp-api.azurewebsites.net/";
+                       ?? "https://consultarcp-api.azurewebsites.net";
+        if (!sepomexBase.EndsWith('/')) sepomexBase += "/";
         services.AddHttpClient<SepomexHttpResolver>(c => c.BaseAddress = new Uri(sepomexBase))
             .AddMcBrokersResilience();
-        services.AddScoped<IPostalCodeResolver, SepomexHttpResolver>();
+        // Importante: resolver IPostalCodeResolver via el typed client factory
+        // (sp.GetRequiredService) en vez de Scoped<I, Impl>. Si se hace lo segundo
+        // DI instancia un SepomexHttpResolver nuevo con un HttpClient SIN BaseAddress
+        // y falla con "BaseAddress must be set" al primer GET.
+        services.AddScoped<IPostalCodeResolver>(sp => sp.GetRequiredService<SepomexHttpResolver>());
         services.AddScoped<IInsurerAdapter, GnpQuoteAdapter>();
         services.AddScoped<IInsurerAdapter, QualitasQuoteAdapter>();
         services.AddScoped<IInsurerAdapter, AnaQuoteAdapter>();
