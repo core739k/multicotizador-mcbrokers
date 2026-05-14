@@ -128,6 +128,17 @@ public sealed class EmitPolicy
         var outcome = await ctx.Adapter.EmitAsync(emitRequest, cancellationToken).ConfigureAwait(false);
         var latency = (int)(_clock.UtcNow - startedAt).TotalMilliseconds;
 
+        // Persistir req/res del adapter de emisión simétrico a
+        // ProcessQuotation.PersistBlobsAsync. Sin esto la respuesta de COPSIS
+        // se descartaba al terminar el request y no quedaba rastro para auditar
+        // rechazos. Sufijo -emit- distingue del blob de cotización; un guid
+        // permite varios intentos sin colisión.
+        var (emitReqBlob, emitResBlob) = await PersistEmitBlobsAsync(
+            ctx.Quotation.CorrelationId, ctx.Insurer.Code, outcome, cancellationToken).ConfigureAwait(false);
+        _logger.LogInformation(
+            "EmitPolicy: blobs persistidos correlation={Correlation} insurer={Insurer} req={Req} res={Res}",
+            ctx.Quotation.CorrelationId, ctx.Insurer.Code, emitReqBlob, emitResBlob);
+
         // Persistir attempt (1 attempt por ahora; retry/backoff lo agrega F5.5 con Polly).
         var attempt = EmissionAttempt.Create(
             emission.Id, attemptNumber: 1,
@@ -208,6 +219,54 @@ public sealed class EmitPolicy
 
         return Result<EmitPolicyResult>.Success(
             new EmitPolicyResult(emission.Id, success.Response.PolicyNumber, emission.Status));
+    }
+
+    private async Task<(string? RequestRef, string? ResponseRef)> PersistEmitBlobsAsync(
+        string correlationId, InsurerCode insurerCode, InsurerEmitOutcome outcome, CancellationToken ct)
+    {
+        var (requestBody, responseBody) = outcome switch
+        {
+            InsurerEmitOutcome.Success s => (s.Response.RawRequest, s.Response.RawResponse),
+            InsurerEmitOutcome.Failure f => (f.Error.RawRequest ?? string.Empty, f.Error.RawResponse ?? string.Empty),
+            _ => (string.Empty, string.Empty),
+        };
+
+        // Si el adapter no capturó body (caso defensivo, ej. timeout antes de
+        // recibir respuesta), no escribimos blob vacío.
+        if (string.IsNullOrWhiteSpace(requestBody) && string.IsNullOrWhiteSpace(responseBody))
+        {
+            return (null, null);
+        }
+
+        var attemptId = Guid.NewGuid().ToString("n");
+        var metadata = new Dictionary<string, string>
+        {
+            ["correlationId"] = correlationId,
+            ["insurer"] = insurerCode.ToString(),
+            ["operation"] = "emit",
+        };
+
+        string? reqRef = null;
+        string? resRef = null;
+        if (!string.IsNullOrWhiteSpace(requestBody))
+        {
+            reqRef = await _blob.WriteAsync(
+                container: "xml-requests",
+                blobName: $"{insurerCode}/{correlationId}-emit-{attemptId}-request.xml",
+                content: requestBody,
+                metadata: metadata,
+                cancellationToken: ct).ConfigureAwait(false);
+        }
+        if (!string.IsNullOrWhiteSpace(responseBody))
+        {
+            resRef = await _blob.WriteAsync(
+                container: "xml-responses",
+                blobName: $"{insurerCode}/{correlationId}-emit-{attemptId}-response.xml",
+                content: responseBody,
+                metadata: metadata,
+                cancellationToken: ct).ConfigureAwait(false);
+        }
+        return (reqRef, resRef);
     }
 
     private async Task<Result<EmissionContext>> BuildContextAsync(Guid resultId, CancellationToken ct)
