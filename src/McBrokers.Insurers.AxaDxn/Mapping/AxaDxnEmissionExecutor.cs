@@ -42,6 +42,9 @@ public sealed class AxaDxnEmissionExecutor
 
         var url = $"{CopsisBaseUrl}?d4_key={Uri.EscapeDataString(axa.CopsisD4Key)}&b={Uri.EscapeDataString(axa.CopsisB)}";
 
+        // URL enmascarada para logging — d4_key/b son auth, no se loggean en claro.
+        var maskedUrl = $"{CopsisBaseUrl}?d4_key={Mask(axa.CopsisD4Key)}&b={Mask(axa.CopsisB)}";
+
         // Payload JSON — estructura aproximada según Documentación/Servicio AXA — Detalle Técnico.
         // El campo numCotizacion es el folio devuelto por la cotización (ExternalQuoteRef).
         var payload = new
@@ -90,6 +93,10 @@ public sealed class AxaDxnEmissionExecutor
         http.Headers.TryAddWithoutValidation("X-Correlation-Id", request.CorrelationId);
 
         var sw = Stopwatch.StartNew();
+        _logger.LogInformation(
+            "COPSIS request → {Url} numCotizacion={NumCotizacion} bodyBytes={BodyBytes}",
+            maskedUrl, request.ExternalQuoteRef, jsonBody.Length);
+
         try
         {
             using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(CopsisTimeoutSeconds));
@@ -99,16 +106,39 @@ public sealed class AxaDxnEmissionExecutor
             var responseBody = await response.Content.ReadAsStringAsync(linked.Token).ConfigureAwait(false);
             sw.Stop();
 
+            // Log explícito siempre — éxito o falla — para que el diagnóstico
+            // desde api.log no requiera abrir el blob. Truncamos a 2000 chars
+            // para no inflar logs si COPSIS devuelve algo desmedido.
+            var bodyForLog = responseBody.Length > 2000 ? responseBody[..2000] + "…[truncated]" : responseBody;
+            _logger.LogInformation(
+                "COPSIS response ← status={Status} latency={LatencyMs}ms body={Body}",
+                (int)response.StatusCode, sw.ElapsedMilliseconds, bodyForLog);
+
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("COPSIS returned HTTP {Status}", (int)response.StatusCode);
+                _logger.LogWarning(
+                    "COPSIS HTTP {Status} {Reason} — body: {Body}",
+                    (int)response.StatusCode, response.ReasonPhrase, bodyForLog);
                 return Fail($"HTTP_{(int)response.StatusCode}",
                     $"COPSIS respondió HTTP {(int)response.StatusCode} {response.ReasonPhrase}.",
                     ErrorCategory.InsurerDown,
                     (int)sw.ElapsedMilliseconds, jsonBody, responseBody);
             }
 
-            return ParseCopsisResponse(jsonBody, responseBody, (int)sw.ElapsedMilliseconds);
+            var outcome = ParseCopsisResponse(jsonBody, responseBody, (int)sw.ElapsedMilliseconds);
+            if (outcome is InsurerEmitOutcome.Failure parseFailure)
+            {
+                _logger.LogWarning(
+                    "COPSIS payload error code={Code} msg={Msg}",
+                    parseFailure.Error.ExternalCode, parseFailure.Error.ExternalMessage);
+            }
+            else if (outcome is InsurerEmitOutcome.Success ok)
+            {
+                _logger.LogInformation(
+                    "COPSIS issued policy {PolicyNumber} pdfUrl={PdfUrl}",
+                    ok.Response.PolicyNumber, ok.Response.PdfDownloadUrl ?? "(none)");
+            }
+            return outcome;
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
@@ -174,4 +204,13 @@ public sealed class AxaDxnEmissionExecutor
         int latencyMs, string? rawRequest, string? rawResponse) =>
         new InsurerEmitOutcome.Failure(new InsurerEmitError(
             category, code, message, latencyMs, rawRequest, rawResponse));
+
+    // Enmascara una credencial para logs: primeros 3 + "***" + últimos 2.
+    // Strings <6 chars salen como "***" — no merece preservar 1 char.
+    private static string Mask(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return "(empty)";
+        if (value.Length < 6) return "***";
+        return $"{value[..3]}***{value[^2..]}";
+    }
 }
