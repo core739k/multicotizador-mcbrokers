@@ -26,6 +26,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\McBrokers.Application\McBrokers.Application.csproj" />
+    <!-- Para tests del LocalDiskBlobStore — la implementación concreta del
+         puerto IBlobStore vive en Infrastructure pero los tests roundtrip
+         se quedan acá por practicidad. -->
+    <ProjectReference Include="..\..\src\McBrokers.Infrastructure\McBrokers.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

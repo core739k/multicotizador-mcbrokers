@@ -45,6 +45,19 @@ public sealed class LocalDiskBlobStore : IBlobStore
         return reference;
     }
 
+    public async Task<string?> ReadAsync(string reference, CancellationToken cancellationToken)
+    {
+        // Reference es "file://<rutaWindows>" devuelta por Write*. Lo escapamos
+        // a path de SO para File.ReadAllText.
+        if (string.IsNullOrWhiteSpace(reference)) return null;
+        const string filePrefix = "file://";
+        var path = reference.StartsWith(filePrefix, StringComparison.OrdinalIgnoreCase)
+            ? reference[filePrefix.Length..].Replace('/', Path.DirectorySeparatorChar)
+            : reference;
+        if (!File.Exists(path)) return null;
+        return await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<string> WriteBinaryAsync(
         string container, string blobName, byte[] content,
         IReadOnlyDictionary<string, string>? metadata, CancellationToken cancellationToken)

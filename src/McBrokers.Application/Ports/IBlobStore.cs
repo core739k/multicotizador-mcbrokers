@@ -21,4 +21,10 @@ public interface IBlobStore
         byte[] content,
         IReadOnlyDictionary<string, string>? metadata,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Lee un blob de texto por la referencia devuelta en Write*.
+    /// Local: file://... ; Azure: https://...
+    /// </summary>
+    Task<string?> ReadAsync(string reference, CancellationToken cancellationToken);
 }

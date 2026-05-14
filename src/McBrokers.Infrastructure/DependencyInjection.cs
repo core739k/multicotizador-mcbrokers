@@ -153,6 +153,8 @@ public static class DependencyInjection
         services.AddScoped<SetAgentActive>();
         services.AddScoped<UpdateAgentCode>();
         services.AddScoped<GetCurrentAgentSummary>();
+        services.AddScoped<ListRecentQuotations>();
+        services.AddScoped<GetQuotationAdminDetail>();
         services.AddScoped<ImportInsurerCatalog>();
         services.AddScoped<DecideMapping>();
         services.AddScoped<GetCatalogForYear>();

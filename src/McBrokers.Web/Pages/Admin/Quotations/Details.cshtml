@@ -1,0 +1,96 @@
+@page "{id:guid}"
+@model McBrokers.Web.Pages.Admin.Quotations.DetailsModel
+@using McBrokers.Application.Quotations
+@{
+    ViewData["Title"] = "Detalle de cotización";
+}
+
+@if (Model.View is null)
+{
+    <p class="text-muted">Cotización no encontrada.</p>
+}
+else
+{
+    <h2>Cotización <code>@Model.View.CorrelationId</code></h2>
+
+    <dl class="row small">
+        <dt class="col-sm-2">Fecha</dt>
+        <dd class="col-sm-10">@Model.View.CreatedAt.ToLocalTime():yyyy-MM-dd HH:mm</dd>
+
+        <dt class="col-sm-2">Vehículo</dt>
+        <dd class="col-sm-10">@Model.View.VehicleSummary</dd>
+
+        <dt class="col-sm-2">Status</dt>
+        <dd class="col-sm-10">@StatusLabels.Spanish(Model.View.Status)</dd>
+
+        <dt class="col-sm-2">CP</dt>
+        <dd class="col-sm-10">@Model.View.PostalCode</dd>
+
+        <dt class="col-sm-2">Agente</dt>
+        <dd class="col-sm-10"><code class="small">@Model.View.AgentId</code></dd>
+    </dl>
+
+    <h4 class="mt-4">Resultados</h4>
+    <p class="text-muted small">
+        Incluye historial completo (versiones superseded en gris).
+    </p>
+
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Aseguradora</th>
+                <th>v</th>
+                <th>Status</th>
+                <th>Mensaje</th>
+                <th>XMLs</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var r in Model.View.Results)
+            {
+                <tr class="@(r.IsCurrent ? "" : "text-muted")">
+                    <td>
+                        @(r.InsurerName ?? r.InsurerId.ToString().Substring(0, 8))
+                        @if (!r.IsCurrent) { <small>(superseded)</small> }
+                    </td>
+                    <td>v@(r.Version)</td>
+                    <td>
+                        <span class="badge bg-@(r.Status == McBrokers.Domain.Quotations.QuotationInsurerStatus.Succeeded ? "success" : "danger")">
+                            @StatusLabels.Spanish(r.Status)
+                        </span>
+                    </td>
+                    <td>
+                        @if (!string.IsNullOrWhiteSpace(r.ErrorCode))
+                        {
+                            <small><code>@r.ErrorCode</code> · @r.ErrorMessage</small>
+                        }
+                        else
+                        {
+                            <small class="text-success">OK</small>
+                        }
+                    </td>
+                    <td>
+                        @if (!string.IsNullOrWhiteSpace(r.RequestBlobRef))
+                        {
+                            <a class="btn btn-sm btn-outline-secondary"
+                               asp-page-handler="Blob"
+                               asp-route-id="@Model.View.Id"
+                               asp-route-reference="@r.RequestBlobRef"
+                               target="_blank">Request</a>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(r.ResponseBlobRef))
+                        {
+                            <a class="btn btn-sm btn-outline-secondary"
+                               asp-page-handler="Blob"
+                               asp-route-id="@Model.View.Id"
+                               asp-route-reference="@r.ResponseBlobRef"
+                               target="_blank">Response</a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <a class="btn btn-link" asp-page="./Index">← Volver al listado</a>
+}

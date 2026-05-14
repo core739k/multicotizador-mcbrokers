@@ -40,6 +40,15 @@ public class QuotationRepository : IQuotationRepository
             .Skip(skip).Take(take)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
+    public async Task<IReadOnlyList<Quotation>> ListRecentAsync(int take, int skip, CancellationToken cancellationToken) =>
+        await _db.Quotations
+            .OrderByDescending(q => q.CreatedAt)
+            .Skip(skip).Take(take)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    public Task<int> CountAsync(CancellationToken cancellationToken) =>
+        _db.Quotations.CountAsync(cancellationToken);
+
     public async Task AddAsync(Quotation quotation, CancellationToken cancellationToken)
     {
         await _db.Quotations.AddAsync(quotation, cancellationToken).ConfigureAwait(false);

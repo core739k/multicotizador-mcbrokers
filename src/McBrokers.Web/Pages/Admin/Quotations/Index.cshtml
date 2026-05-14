@@ -1,0 +1,65 @@
+@page
+@model McBrokers.Web.Pages.Admin.Quotations.IndexModel
+@using McBrokers.Application.Quotations
+@{
+    ViewData["Title"] = "Cotizaciones";
+}
+
+<h2>Cotizaciones</h2>
+
+@if (Model.Data is null || Model.Data.Items.Count == 0)
+{
+    <p class="text-muted">Aún no hay cotizaciones registradas.</p>
+}
+else
+{
+    <p class="text-muted small">
+        Mostrando @Model.Data.Items.Count de @Model.Data.Total (página @Model.Data.Page).
+    </p>
+
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Correlation ID</th>
+                <th>Vehículo</th>
+                <th>Status</th>
+                <th>Aseguradoras</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var q in Model.Data.Items)
+            {
+                <tr>
+                    <td><small>@q.CreatedAt.ToLocalTime():yyyy-MM-dd HH:mm</small></td>
+                    <td><code class="small">@q.CorrelationId</code></td>
+                    <td>@q.VehicleSummary</td>
+                    <td>
+                        <span class="badge bg-secondary">@StatusLabels.Spanish(q.Status)</span>
+                    </td>
+                    <td>@q.CurrentResultsCount / @q.ExpectedResultsCount</td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-primary"
+                           asp-page="./Details" asp-route-id="@q.Id">Ver detalle</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    var prev = Math.Max(1, Model.Data.Page - 1);
+    var next = Model.Data.Page + 1;
+    var hasMore = Model.Data.Page * Model.Data.PageSize < Model.Data.Total;
+    <nav>
+        <ul class="pagination pagination-sm">
+            <li class="page-item @(Model.Data.Page <= 1 ? "disabled" : "")">
+                <a class="page-link" asp-route-pageNumber="@prev">Anterior</a>
+            </li>
+            <li class="page-item disabled"><span class="page-link">Página @Model.Data.Page</span></li>
+            <li class="page-item @(!hasMore ? "disabled" : "")">
+                <a class="page-link" asp-route-pageNumber="@next">Siguiente</a>
+            </li>
+        </ul>
+    </nav>
+}

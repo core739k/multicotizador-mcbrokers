@@ -42,6 +42,24 @@ public sealed class AzureBlobStore : IBlobStore
         return await WriteCoreAsync(container, blobName, content, contentType, metadata, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<string?> ReadAsync(string reference, CancellationToken cancellationToken)
+    {
+        // Reference es la URL del blob devuelta en Write* (BlobClient.Uri).
+        // Parseamos {Account}.blob.core.windows.net/{container}/{blob}.
+        if (string.IsNullOrWhiteSpace(reference)) return null;
+        if (!Uri.TryCreate(reference, UriKind.Absolute, out var uri)) return null;
+
+        var segments = uri.AbsolutePath.TrimStart('/').Split('/', 2);
+        if (segments.Length != 2) return null;
+
+        var containerClient = _serviceClient.GetBlobContainerClient(segments[0]);
+        var blobClient = containerClient.GetBlobClient(segments[1]);
+        if (!await blobClient.ExistsAsync(cancellationToken).ConfigureAwait(false)) return null;
+
+        var response = await blobClient.DownloadContentAsync(cancellationToken).ConfigureAwait(false);
+        return response.Value.Content.ToString();
+    }
+
     private async Task<string> WriteCoreAsync(
         string container, string blobName, byte[] content, string contentType,
         IReadOnlyDictionary<string, string>? metadata, CancellationToken cancellationToken)

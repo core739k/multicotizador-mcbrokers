@@ -10,6 +10,11 @@ public interface IQuotationRepository
 
     Task<IReadOnlyList<Quotation>> ListByAgentAsync(Guid agentId, int take, int skip, CancellationToken cancellationToken);
 
+    /// <summary>Cualquier agente — usado por el panel admin.</summary>
+    Task<IReadOnlyList<Quotation>> ListRecentAsync(int take, int skip, CancellationToken cancellationToken);
+
+    Task<int> CountAsync(CancellationToken cancellationToken);
+
     Task AddAsync(Quotation quotation, CancellationToken cancellationToken);
 
     Task UpdateAsync(Quotation quotation, CancellationToken cancellationToken);
