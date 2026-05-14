@@ -77,10 +77,20 @@ public static class DependencyInjection
         }
         else
         {
-            var blobRoot = configuration["Blob:LocalRoot"]
-                ?? Path.Combine(Path.GetTempPath(), "mcbrokers-blobs");
+            // Default: logs/blobs dentro del proyecto en vez de %TEMP%, así el
+            // admin (vía /Admin/Quotations) y operaciones pueden inspeccionar
+            // los XMLs sin escarbar el AppData del usuario. Configurable via
+            // Blob:LocalRoot. Cuando se configure Storage:ConnectionString en
+            // prod, AzureBlobStore reemplaza a LocalDiskBlobStore automáticamente.
             services.AddSingleton<IBlobStore>(sp =>
-                new LocalDiskBlobStore(blobRoot, sp.GetRequiredService<ILogger<LocalDiskBlobStore>>()));
+            {
+                var configured = configuration["Blob:LocalRoot"];
+                var env = sp.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>();
+                var blobRoot = !string.IsNullOrWhiteSpace(configured)
+                    ? configured
+                    : Path.Combine(env.ContentRootPath, "logs", "blobs");
+                return new LocalDiskBlobStore(blobRoot, sp.GetRequiredService<ILogger<LocalDiskBlobStore>>());
+            });
         }
 
         // Cola y worker
