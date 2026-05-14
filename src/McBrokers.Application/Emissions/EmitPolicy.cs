@@ -6,6 +6,7 @@ using McBrokers.Domain.Insurers.AxaDxn;
 using McBrokers.Domain.Quotations;
 using McBrokers.Insurers.Abstractions;
 using McBrokers.SharedKernel;
+using Microsoft.Extensions.Logging;
 
 namespace McBrokers.Application.Emissions;
 
@@ -50,6 +51,7 @@ public sealed class EmitPolicy
     private readonly IClock _clock;
     private readonly ICurrentAgentProvider _currentAgent;
     private readonly IKnownInsurerErrorLookup _errorLookup;
+    private readonly ILogger<EmitPolicy> _logger;
 
     public EmitPolicy(
         IEmissionRepository emissions,
@@ -66,7 +68,8 @@ public sealed class EmitPolicy
         IAuditWriter audit,
         IClock clock,
         ICurrentAgentProvider currentAgent,
-        IKnownInsurerErrorLookup errorLookup)
+        IKnownInsurerErrorLookup errorLookup,
+        ILogger<EmitPolicy> logger)
     {
         _emissions = emissions;
         _quotations = quotations;
@@ -83,6 +86,7 @@ public sealed class EmitPolicy
         _clock = clock;
         _currentAgent = currentAgent;
         _errorLookup = errorLookup;
+        _logger = logger;
     }
 
     public async Task<Result<EmitPolicyResult>> ExecuteAsync(
@@ -100,7 +104,13 @@ public sealed class EmitPolicy
 
         // Recupera contexto: Quotation + Vehicle + Mapping + Insurer + Config + Adapter.
         var context = await BuildContextAsync(command.QuotationInsurerResultId, cancellationToken).ConfigureAwait(false);
-        if (!context.IsSuccess) return Result<EmitPolicyResult>.Failure(context.Error);
+        if (!context.IsSuccess)
+        {
+            _logger.LogWarning(
+                "EmitPolicy: BuildContext failed for resultId={ResultId}: {Error}",
+                command.QuotationInsurerResultId, context.Error);
+            return Result<EmitPolicyResult>.Failure(context.Error);
+        }
 
         var ctx = context.Value;
 
@@ -137,6 +147,10 @@ public sealed class EmitPolicy
                 .FindAsync(ctx.Insurer.Id, failure.Error.ExternalCode, cancellationToken)
                 .ConfigureAwait(false);
             var humanMessage = known?.HumanMessage ?? failure.Error.ExternalMessage;
+
+            _logger.LogWarning(
+                "EmitPolicy: adapter {Insurer} returned Failure code={Code} msg={Msg} latency={LatencyMs}ms",
+                ctx.Insurer.Code, failure.Error.ExternalCode, humanMessage, failure.Error.LatencyMs);
 
             emission.MarkFailed($"[{failure.Error.ExternalCode}] {humanMessage}");
             await _emissions.UpdateAsync(emission, cancellationToken).ConfigureAwait(false);

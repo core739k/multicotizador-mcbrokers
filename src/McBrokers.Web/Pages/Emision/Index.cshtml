@@ -26,31 +26,45 @@ else
     <form method="post">
         <input type="hidden" asp-for="Input.QuotationInsurerResultId" />
 
+        @* Resumen de errores de ModelState — sin esto la página re-renderiza
+           silenciosamente cuando un [Required] o regex falla y el vendedor
+           cree que el botón "no hace nada". *@
+        <div asp-validation-summary="All" class="alert alert-danger" role="alert"
+             style="display:none">
+        </div>
+        @* Bootstrap no oculta el alert si está vacío — un truquito JS al final
+           del form lo muestra solo si tiene contenido. *@
+
         <h4>Cliente</h4>
         <div class="row g-3">
             <div class="col-md-4">
                 <label asp-for="Input.FirstName" class="form-label">Nombre</label>
                 <input asp-for="Input.FirstName" class="form-control" required />
+                <span asp-validation-for="Input.FirstName" class="text-danger small"></span>
             </div>
             <div class="col-md-4">
                 <label asp-for="Input.LastNamePaternal" class="form-label">Apellido paterno</label>
                 <input asp-for="Input.LastNamePaternal" class="form-control" required />
+                <span asp-validation-for="Input.LastNamePaternal" class="text-danger small"></span>
             </div>
             <div class="col-md-4">
                 <label asp-for="Input.LastNameMaternal" class="form-label">Apellido materno</label>
                 <input asp-for="Input.LastNameMaternal" class="form-control" />
             </div>
             <div class="col-md-4">
-                <label asp-for="Input.Rfc" class="form-label">RFC</label>
+                <label asp-for="Input.Rfc" class="form-label">RFC (12 o 13 caracteres)</label>
                 <input asp-for="Input.Rfc" class="form-control" maxlength="13" required />
+                <span asp-validation-for="Input.Rfc" class="text-danger small"></span>
             </div>
             <div class="col-md-4">
                 <label asp-for="Input.Phone" class="form-label">Teléfono (10 dígitos)</label>
                 <input asp-for="Input.Phone" class="form-control" pattern="\d{10}" required />
+                <span asp-validation-for="Input.Phone" class="text-danger small"></span>
             </div>
             <div class="col-md-4">
                 <label asp-for="Input.Email" class="form-label">Email</label>
                 <input asp-for="Input.Email" type="email" class="form-control" required />
+                <span asp-validation-for="Input.Email" class="text-danger small"></span>
             </div>
         </div>
 
@@ -59,10 +73,12 @@ else
             <div class="col-md-6">
                 <label asp-for="Input.Street" class="form-label">Calle</label>
                 <input asp-for="Input.Street" class="form-control" required />
+                <span asp-validation-for="Input.Street" class="text-danger small"></span>
             </div>
             <div class="col-md-3">
                 <label asp-for="Input.ExteriorNumber" class="form-label">N° Ext.</label>
                 <input asp-for="Input.ExteriorNumber" class="form-control" required />
+                <span asp-validation-for="Input.ExteriorNumber" class="text-danger small"></span>
             </div>
             <div class="col-md-3">
                 <label asp-for="Input.InteriorNumber" class="form-label">N° Int.</label>
@@ -71,18 +87,22 @@ else
             <div class="col-md-4">
                 <label asp-for="Input.Neighborhood" class="form-label">Colonia</label>
                 <input asp-for="Input.Neighborhood" class="form-control" required />
+                <span asp-validation-for="Input.Neighborhood" class="text-danger small"></span>
             </div>
             <div class="col-md-4">
                 <label asp-for="Input.City" class="form-label">Ciudad/Municipio</label>
                 <input asp-for="Input.City" class="form-control" required />
+                <span asp-validation-for="Input.City" class="text-danger small"></span>
             </div>
             <div class="col-md-2">
                 <label asp-for="Input.StateCode" class="form-label">Edo. (2 díg)</label>
                 <input asp-for="Input.StateCode" class="form-control" maxlength="2" required />
+                <span asp-validation-for="Input.StateCode" class="text-danger small"></span>
             </div>
             <div class="col-md-2">
-                <label asp-for="Input.PostalCode" class="form-label">CP</label>
+                <label asp-for="Input.PostalCode" class="form-label">CP (5 díg)</label>
                 <input asp-for="Input.PostalCode" class="form-control" pattern="\d{5}" required />
+                <span asp-validation-for="Input.PostalCode" class="text-danger small"></span>
             </div>
         </div>
 
@@ -91,18 +111,29 @@ else
             <div class="col-md-4">
                 <label asp-for="Input.Plate" class="form-label">Placas</label>
                 <input asp-for="Input.Plate" class="form-control" required />
+                <span asp-validation-for="Input.Plate" class="text-danger small"></span>
             </div>
             <div class="col-md-4">
                 <label asp-for="Input.EngineNumber" class="form-label">N° Motor</label>
                 <input asp-for="Input.EngineNumber" class="form-control" required />
+                <span asp-validation-for="Input.EngineNumber" class="text-danger small"></span>
             </div>
             <div class="col-md-4">
                 <label asp-for="Input.SerialNumber" class="form-label">N° Serie</label>
                 <input asp-for="Input.SerialNumber" class="form-control" required />
+                <span asp-validation-for="Input.SerialNumber" class="text-danger small"></span>
             </div>
         </div>
 
         <button type="submit" class="btn btn-success mt-4">Emitir póliza</button>
         <a class="btn btn-link" asp-page="/Index">Cancelar</a>
     </form>
+
+    @* Muestra el alert solo si <div asp-validation-summary> rendereó errores. *@
+    <script>
+        (function () {
+            var summary = document.querySelector('[asp-validation-summary], .validation-summary-errors');
+            if (summary && summary.children.length > 0) summary.style.display = '';
+        })();
+    </script>
 }
