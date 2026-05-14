@@ -23,6 +23,16 @@ public class QuotationRepository : IQuotationRepository
         return quotation;
     }
 
+    public async Task<Quotation?> FindByResultIdAsync(Guid resultId, CancellationToken cancellationToken)
+    {
+        var quotationId = await _db.QuotationInsurerResults
+            .Where(r => r.Id == resultId)
+            .Select(r => (Guid?)r.QuotationId)
+            .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+        if (quotationId is null) return null;
+        return await GetByIdAsync(quotationId.Value, cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<IReadOnlyList<Quotation>> ListByAgentAsync(Guid agentId, int take, int skip, CancellationToken cancellationToken) =>
         await _db.Quotations
             .Where(q => q.AgentId == agentId)

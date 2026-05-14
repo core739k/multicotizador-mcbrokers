@@ -6,6 +6,8 @@ public interface IQuotationRepository
 {
     Task<Quotation?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
+    Task<Quotation?> FindByResultIdAsync(Guid resultId, CancellationToken cancellationToken);
+
     Task<IReadOnlyList<Quotation>> ListByAgentAsync(Guid agentId, int take, int skip, CancellationToken cancellationToken);
 
     Task AddAsync(Quotation quotation, CancellationToken cancellationToken);

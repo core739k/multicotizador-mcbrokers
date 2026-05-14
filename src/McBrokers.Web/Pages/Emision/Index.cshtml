@@ -84,25 +84,45 @@ else
                 <label asp-for="Input.InteriorNumber" class="form-label">N° Int.</label>
                 <input asp-for="Input.InteriorNumber" class="form-control" />
             </div>
-            <div class="col-md-4">
-                <label asp-for="Input.Neighborhood" class="form-label">Colonia</label>
-                <input asp-for="Input.Neighborhood" class="form-control" required />
-                <span asp-validation-for="Input.Neighborhood" class="text-danger small"></span>
+            <div class="col-md-3">
+                <label asp-for="Input.PostalCode" class="form-label">Código postal</label>
+                <input asp-for="Input.PostalCode" class="form-control" pattern="\d{5}" required
+                       id="cp-input" autocomplete="off" />
+                <span asp-validation-for="Input.PostalCode" class="text-danger small"></span>
+                <div id="cp-status" class="form-text small text-muted"></div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
+                <label class="form-label">Estado</label>
+                <input value="@Model.ResolvedEstado" class="form-control" id="cp-estado"
+                       readonly tabindex="-1" />
+                @* StateCode se manda hidden — lo puebla el JS desde la respuesta SEPOMEX. *@
+                <input type="hidden" asp-for="Input.StateCode" id="cp-estado-hidden" />
+            </div>
+            <div class="col-md-3">
                 <label asp-for="Input.City" class="form-label">Ciudad/Municipio</label>
-                <input asp-for="Input.City" class="form-control" required />
+                <input asp-for="Input.City" class="form-control" id="cp-ciudad" readonly required />
                 <span asp-validation-for="Input.City" class="text-danger small"></span>
             </div>
-            <div class="col-md-2">
-                <label asp-for="Input.StateCode" class="form-label">Edo. (2 díg)</label>
-                <input asp-for="Input.StateCode" class="form-control" maxlength="2" required />
-                <span asp-validation-for="Input.StateCode" class="text-danger small"></span>
-            </div>
-            <div class="col-md-2">
-                <label asp-for="Input.PostalCode" class="form-label">CP (5 díg)</label>
-                <input asp-for="Input.PostalCode" class="form-control" pattern="\d{5}" required />
-                <span asp-validation-for="Input.PostalCode" class="text-danger small"></span>
+            <div class="col-md-3">
+                <label asp-for="Input.Neighborhood" class="form-label">Colonia</label>
+                <select asp-for="Input.Neighborhood" class="form-select" id="cp-colonia" required>
+                    @if (string.IsNullOrWhiteSpace(Model.Input.Neighborhood) && Model.AvailableColonias.Count == 0)
+                    {
+                        <option value="">— Ingresa el CP —</option>
+                    }
+                    @foreach (var col in Model.AvailableColonias)
+                    {
+                        if (col == Model.Input.Neighborhood)
+                        {
+                            <option value="@col" selected>@col</option>
+                        }
+                        else
+                        {
+                            <option value="@col">@col</option>
+                        }
+                    }
+                </select>
+                <span asp-validation-for="Input.Neighborhood" class="text-danger small"></span>
             </div>
         </div>
 
@@ -134,6 +154,59 @@ else
         (function () {
             var summary = document.querySelector('[asp-validation-summary], .validation-summary-errors');
             if (summary && summary.children.length > 0) summary.style.display = '';
+        })();
+
+        // SEPOMEX: al perder focus en el CP, consulta el servicio y autocompleta
+        // Estado / Municipio / dropdown de Colonias. Si el servicio rechaza el
+        // CP (404) muestra el mensaje y deja los campos como estaban.
+        (function () {
+            var cpInput = document.getElementById('cp-input');
+            var statusBox = document.getElementById('cp-status');
+            var estado = document.getElementById('cp-estado');
+            var estadoHidden = document.getElementById('cp-estado-hidden');
+            var ciudad = document.getElementById('cp-ciudad');
+            var colonia = document.getElementById('cp-colonia');
+            if (!cpInput) return;
+
+            async function resolve() {
+                var cp = cpInput.value.trim();
+                if (!/^\d{5}$/.test(cp)) {
+                    statusBox.textContent = '';
+                    return;
+                }
+                statusBox.textContent = 'Consultando SEPOMEX…';
+                try {
+                    var resp = await fetch('?handler=ResolveCp&cp=' + encodeURIComponent(cp), {
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    var data = await resp.json();
+                    if (!resp.ok || !data.ok) {
+                        statusBox.textContent = data.error || 'SEPOMEX no devolvió respuesta.';
+                        statusBox.classList.add('text-danger');
+                        return;
+                    }
+                    statusBox.classList.remove('text-danger');
+                    statusBox.textContent = '';
+                    if (estado) estado.value = data.estado || '';
+                    if (estadoHidden) estadoHidden.value = data.estado || '';
+                    if (ciudad) ciudad.value = data.municipio || '';
+                    if (colonia) {
+                        colonia.innerHTML = '';
+                        (data.asentamientos || []).forEach(function (c) {
+                            var opt = document.createElement('option');
+                            opt.value = c;
+                            opt.textContent = c;
+                            colonia.appendChild(opt);
+                        });
+                    }
+                } catch (e) {
+                    statusBox.textContent = 'Error de red al consultar SEPOMEX.';
+                    statusBox.classList.add('text-danger');
+                }
+            }
+
+            cpInput.addEventListener('blur', resolve);
+            cpInput.addEventListener('change', resolve);
         })();
     </script>
 }

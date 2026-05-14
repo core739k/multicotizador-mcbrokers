@@ -3,6 +3,7 @@ using McBrokers.Application.Agents;
 using McBrokers.Application.Auth;
 using McBrokers.Application.Catalog;
 using McBrokers.Application.Ports;
+using McBrokers.Application.Postal;
 using McBrokers.Application.Quotations;
 using McBrokers.Domain.Catalog.Matching;
 using McBrokers.Domain.Insurers;
@@ -113,6 +114,14 @@ public static class DependencyInjection
         services.AddHttpClient<AxaColQuoteAdapter>().AddMcBrokersResilience();
         services.AddHttpClient<AxaDxnQuoteAdapter>().AddMcBrokersResilience();
         services.AddHttpClient<McBrokers.Insurers.AxaDxn.Mapping.AxaDxnEmissionExecutor>().AddMcBrokersResilience();
+
+        // SEPOMEX — autocompletar Estado/Municipio/Colonia desde CP en /Emision.
+        // BaseUrl configurable; el resilience handler reintenta 5xx/timeouts.
+        var sepomexBase = configuration["Sepomex:BaseUrl"]
+                       ?? "https://consultarcp-api.azurewebsites.net/";
+        services.AddHttpClient<SepomexHttpResolver>(c => c.BaseAddress = new Uri(sepomexBase))
+            .AddMcBrokersResilience();
+        services.AddScoped<IPostalCodeResolver, SepomexHttpResolver>();
         services.AddScoped<IInsurerAdapter, GnpQuoteAdapter>();
         services.AddScoped<IInsurerAdapter, QualitasQuoteAdapter>();
         services.AddScoped<IInsurerAdapter, AnaQuoteAdapter>();
