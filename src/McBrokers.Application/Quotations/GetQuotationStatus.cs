@@ -11,6 +11,8 @@ public sealed record QuotationStatusView(
     QuotationStatus Status,
     int ExpectedResultsCount,
     decimal SumInsured,
+    Guid BaseVehicleMasterId,
+    ValuationType BaseValuationType,
     QuotationVehicleView? Vehicle,
     QuotationDeduciblesView? Deducibles,
     IReadOnlyList<QuotationResultView> Results);
@@ -77,6 +79,8 @@ public sealed class GetQuotationStatus
         return new QuotationStatusView(
             q.Id, q.CorrelationId, q.Status, q.ExpectedResultsCount,
             SumInsured: q.SumInsured,
+            BaseVehicleMasterId: q.VehicleMasterId,
+            BaseValuationType: q.ValuationType,
             Vehicle: vehicle,
             Deducibles: ParseDeducibles(q.CustomerSnapshotJson),
             // Solo los results vigentes — los superseded por re-cotización siguen en

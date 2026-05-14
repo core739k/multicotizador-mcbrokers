@@ -17,6 +17,16 @@ public class DefaultCoveragesTests
     }
 
     [Fact]
+    public void Available_sets_default_to_POC_lists()
+    {
+        var sut = new DefaultCoverages();
+
+        sut.AvailableDMPct.Should().Equal(5m, 10m, 15m, 20m);
+        sut.AvailableRTPct.Should().Equal(5m, 10m, 15m, 20m);
+        sut.AvailableGMO.Should().Equal(50_000m, 100_000m, 200_000m, 300_000m, 500_000m);
+    }
+
+    [Fact]
     public void Binds_from_configuration_section()
     {
         var settings = new Dictionary<string, string?>

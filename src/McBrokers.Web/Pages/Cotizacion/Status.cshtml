@@ -31,6 +31,11 @@ else
         @Model.View.Results.Count de @Model.View.ExpectedResultsCount aseguradoras respondieron.
     </p>
 
+    @if (!string.IsNullOrWhiteSpace(Model.RequoteError))
+    {
+        <div class="alert alert-danger">@Model.RequoteError</div>
+    }
+
     @if (Model.View.Results.Count == 0)
     {
         <div class="alert alert-info">
@@ -39,9 +44,21 @@ else
     }
     else
     {
-        @* Tarjetas horizontales — una por aseguradora, columnas: Prima · Versión · Valor · DM% · RT% · RC · GMO. *@
+        @* Tarjetas horizontales — una por aseguradora. Selects editables
+           recotizan esa aseguradora al cambiar (form submit on change). *@
         @foreach (var r in Model.View.Results)
         {
+            // Valores efectivos: overrides previos si existen, sino base de la Quotation.
+            var effVehicleId = r.Overrides?.VehicleMasterId ?? Model.View.BaseVehicleMasterId;
+            var effValuation = r.Overrides?.Valuation ?? Model.View.BaseValuationType;
+            var effDMPct = r.Overrides?.MaterialDamagesDeductiblePct
+                           ?? Model.View.Deducibles?.MaterialDamagesDeductiblePct;
+            var effRTPct = r.Overrides?.RobberyDeductiblePct
+                           ?? Model.View.Deducibles?.RobberyDeductiblePct;
+            var effGMO = r.Overrides?.MedicalExpensesSumInsured
+                         ?? Model.View.Deducibles?.MedicalExpensesSumInsured;
+            var rcMonto = Model.View.Deducibles?.CivilLiabilitySumInsured;
+
             <div class="card mb-3 @(r.Status == QuotationInsurerStatus.Succeeded ? "border-success" : "border-danger")">
                 <div class="card-body py-3">
                     <div class="d-flex justify-content-between align-items-start mb-2">
@@ -53,6 +70,10 @@ else
                             }
                             <span>@(r.InsurerName ?? "Aseguradora")</span>
                             <span class="badge bg-@StatusColor(r.Status) ms-2">@StatusLabels.Spanish(r.Status)</span>
+                            @if (r.Version > 1)
+                            {
+                                <span class="badge bg-info text-dark">v@(r.Version)</span>
+                            }
                         </h5>
                         @if (r.Status == QuotationInsurerStatus.Succeeded)
                         {
@@ -64,32 +85,119 @@ else
 
                     @if (r.Status == QuotationInsurerStatus.Succeeded)
                     {
-                        <div class="row text-center gx-2">
-                            <div class="col">
+                        @* Una form por card. Cada select hace submit on change y manda
+                           los 5 overrides — los hidden inputs preservan los no tocados.
+                           El nombre de los campos corresponde a OnPostRequoteAsync. *@
+                        <form method="post" asp-page-handler="Requote"
+                              asp-route-id="@Model.View.Id"
+                              asp-route-insurerId="@r.InsurerId"
+                              class="row g-2 align-items-end mb-2">
+
+                            <div class="col-md-1">
                                 <div class="text-muted small">Prima total</div>
                                 <div class="fw-bold fs-5">$@r.PremiumTotal?.ToString("N2")</div>
                             </div>
-                            <div class="col">
-                                <div class="text-muted small">Versión</div>
-                                <div>@(Model.View.Vehicle?.Version ?? "—")</div>
+
+                            <div class="col-md-3">
+                                <label class="form-label text-muted small mb-1">Versión</label>
+                                <select name="vehicleMasterId" class="form-select form-select-sm"
+                                        onchange="this.form.submit()">
+                                    @foreach (var v in Model.AvailableVehicleVersions)
+                                    {
+                                        if (v.Id == effVehicleId)
+                                        {
+                                            <option value="@v.Id" selected>@v.Version</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@v.Id">@v.Version</option>
+                                        }
+                                    }
+                                    @if (Model.AvailableVehicleVersions.Count == 0 && Model.View.Vehicle is not null)
+                                    {
+                                        <option value="@effVehicleId" selected>@Model.View.Vehicle.Version</option>
+                                    }
+                                </select>
                             </div>
-                            <div class="col">
-                                <div class="text-muted small">DM</div>
-                                <div>@FormatPercent(Model.View.Deducibles?.MaterialDamagesDeductiblePct)</div>
+
+                            <div class="col-md-2">
+                                <label class="form-label text-muted small mb-1">Valor</label>
+                                <select name="valuation" class="form-select form-select-sm"
+                                        onchange="this.form.submit()">
+                                    @foreach (var vt in Enum.GetValues<ValuationType>())
+                                    {
+                                        if (vt == effValuation)
+                                        {
+                                            <option value="@vt" selected>@vt</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@vt">@vt</option>
+                                        }
+                                    }
+                                </select>
                             </div>
-                            <div class="col">
-                                <div class="text-muted small">RT</div>
-                                <div>@FormatPercent(Model.View.Deducibles?.RobberyDeductiblePct)</div>
+
+                            <div class="col-md-1">
+                                <label class="form-label text-muted small mb-1">DM</label>
+                                <select name="dmPct" class="form-select form-select-sm"
+                                        onchange="this.form.submit()">
+                                    @foreach (var d in Model.AvailableDMPct)
+                                    {
+                                        if (d == effDMPct)
+                                        {
+                                            <option value="@d" selected>@d%</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@d">@d%</option>
+                                        }
+                                    }
+                                </select>
                             </div>
-                            <div class="col">
+
+                            <div class="col-md-1">
+                                <label class="form-label text-muted small mb-1">RT</label>
+                                <select name="rtPct" class="form-select form-select-sm"
+                                        onchange="this.form.submit()">
+                                    @foreach (var d in Model.AvailableRTPct)
+                                    {
+                                        if (d == effRTPct)
+                                        {
+                                            <option value="@d" selected>@d%</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@d">@d%</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="col-md-2">
+                                <label class="form-label text-muted small mb-1">GMO</label>
+                                <select name="gmo" class="form-select form-select-sm"
+                                        onchange="this.form.submit()">
+                                    @foreach (var g in Model.AvailableGMO)
+                                    {
+                                        if (g == effGMO)
+                                        {
+                                            <option value="@g" selected>$@g.ToString("N0")</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@g">$@g.ToString("N0")</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="col-md-2">
                                 <div class="text-muted small">RC</div>
-                                <div>@FormatMoney(Model.View.Deducibles?.CivilLiabilitySumInsured)</div>
+                                <div>@FormatMoney(rcMonto)</div>
                             </div>
-                            <div class="col">
-                                <div class="text-muted small">GMO</div>
-                                <div>@FormatMoney(Model.View.Deducibles?.MedicalExpensesSumInsured)</div>
-                            </div>
-                        </div>
+                        </form>
+
                         @if (r.CoverageBadges.Count > 0)
                         {
                             <div class="mt-2 d-flex flex-wrap gap-1">
