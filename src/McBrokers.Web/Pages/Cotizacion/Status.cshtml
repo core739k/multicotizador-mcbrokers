@@ -94,7 +94,11 @@ else
                               asp-route-insurerId="@r.InsurerId"
                               class="row g-2 align-items-end mb-2">
 
-                            <div class="col-md-1">
+                            @* col-md-auto + nowrap: col-md-1 (~80px) recortaba el
+                               último dígito de montos como $23,456.78 y lo
+                               envolvía a la línea siguiente. auto deja que la
+                               columna crezca al ancho real del monto. *@
+                            <div class="col-md-auto" style="white-space: nowrap;">
                                 <div class="text-muted small">Prima total</div>
                                 <div class="fw-bold fs-5">$@r.PremiumTotal?.ToString("N2")</div>
                             </div>
@@ -129,11 +133,11 @@ else
                                     {
                                         if (vt == effValuation)
                                         {
-                                            <option value="@vt" selected>@vt</option>
+                                            <option value="@vt" selected>@SpanishValuation(vt)</option>
                                         }
                                         else
                                         {
-                                            <option value="@vt">@vt</option>
+                                            <option value="@vt">@SpanishValuation(vt)</option>
                                         }
                                     }
                                 </select>
@@ -298,4 +302,14 @@ else
 
     private static string FormatMoney(decimal? value) =>
         value is null ? "—" : $"${value.Value:N0}";
+
+    private static string SpanishValuation(ValuationType v) => v switch
+    {
+        ValuationType.Commercial => "Comercial",
+        ValuationType.CommercialPlus10 => "Comercial + 10%",
+        ValuationType.Agreed => "Convenido",
+        ValuationType.AgreedPlus10 => "Convenido + 10%",
+        ValuationType.Invoice => "Valor Factura",
+        _ => v.ToString(),
+    };
 }
