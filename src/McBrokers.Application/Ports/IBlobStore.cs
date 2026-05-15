@@ -28,4 +28,16 @@ public interface IBlobStore
     /// Local: file://... ; Azure: https://...
     /// </summary>
     Task<string?> ReadAsync(string reference, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Lee un blob binario por su ruta relativa al container (la misma que
+    /// se pasó a WriteBinaryAsync). Devuelve null si la ruta es vacía o el
+    /// blob no existe.
+    ///
+    /// Asimétrico con ReadAsync a propósito: los PDFs se sirven a navegadores
+    /// (visor de póliza) y el caller solo conoce la ruta canónica, no la
+    /// URL/reference de cada backend. Mantener path como identidad permite
+    /// que el mismo PdfBlobRef funcione en LocalDisk y Azure sin parsing.
+    /// </summary>
+    Task<byte[]?> ReadBinaryAsync(string path, CancellationToken cancellationToken);
 }

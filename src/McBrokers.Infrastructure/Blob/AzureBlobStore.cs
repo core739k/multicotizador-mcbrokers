@@ -64,6 +64,17 @@ public sealed class AzureBlobStore : IBlobStore
         return response.Value.Content.ToString();
     }
 
+    public async Task<byte[]?> ReadBinaryAsync(string path, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return null;
+        var containerClient = _serviceClient.GetBlobContainerClient(DefaultContainerName);
+        var blobClient = containerClient.GetBlobClient(path);
+        if (!await blobClient.ExistsAsync(cancellationToken).ConfigureAwait(false)) return null;
+
+        var response = await blobClient.DownloadContentAsync(cancellationToken).ConfigureAwait(false);
+        return response.Value.Content.ToArray();
+    }
+
     private async Task<string> WriteCoreAsync(
         string path, byte[] content, string contentType,
         IReadOnlyDictionary<string, string>? metadata, CancellationToken cancellationToken)

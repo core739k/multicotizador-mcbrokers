@@ -202,9 +202,14 @@ public sealed class EmitPolicy
                 var bytes = await _pdfDownloader
                     .DownloadAsync(success.Response.PdfDownloadUrl!, cancellationToken)
                     .ConfigureAwait(false);
-                pdfBlobRef = await _blob.WriteBinaryAsync(
-                    path: BlobPaths.PolizaPdf(ctx.Vehicle.Year, ctx.Vehicle.Brand, ctx.Vehicle.Model,
-                        ctx.Quotation.CorrelationId, ctx.Insurer.Code),
+                // Persistimos la ruta relativa al container (no la URL/file://
+                // que devuelve WriteBinaryAsync) para que el visor sea
+                // portable entre LocalDisk y Azure — el endpoint lee por path.
+                var pdfPath = BlobPaths.PolizaPdf(
+                    ctx.Vehicle.Year, ctx.Vehicle.Brand, ctx.Vehicle.Model,
+                    ctx.Quotation.CorrelationId, ctx.Insurer.Code);
+                await _blob.WriteBinaryAsync(
+                    path: pdfPath,
                     content: bytes,
                     metadata: new Dictionary<string, string>
                     {
@@ -213,6 +218,7 @@ public sealed class EmitPolicy
                         ["policyNumber"] = success.Response.PolicyNumber,
                     },
                     cancellationToken).ConfigureAwait(false);
+                pdfBlobRef = pdfPath;
             }
             catch
             {

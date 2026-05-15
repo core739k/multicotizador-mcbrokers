@@ -70,4 +70,29 @@ public class LocalDiskBlobStoreTests : IDisposable
 
         content.Should().Be("hola");
     }
+
+    [Fact]
+    public async Task ReadBinaryAsync_returns_bytes_written_under_relative_path()
+    {
+        // Visor de póliza: PdfBlobRef guarda la ruta relativa del container
+        // (ej. "2024/ACURA/MDX/{cid}/poliza-AxaDxn.pdf") y el endpoint del Api
+        // lee directo por ese path — sin parsear file:// ni URLs.
+        var store = new LocalDiskBlobStore(_root, NullLogger<LocalDiskBlobStore>.Instance);
+        var bytes = new byte[] { 0x25, 0x50, 0x44, 0x46, 0x2D }; // "%PDF-"
+        const string path = "2024/ACURA/MDX/cid-abc/poliza-AxaDxn.pdf";
+        await store.WriteBinaryAsync(path, bytes, metadata: null, CancellationToken.None);
+
+        var read = await store.ReadBinaryAsync(path, CancellationToken.None);
+
+        read.Should().Equal(bytes);
+    }
+
+    [Fact]
+    public async Task ReadBinaryAsync_returns_null_for_missing_or_blank_path()
+    {
+        var store = new LocalDiskBlobStore(_root, NullLogger<LocalDiskBlobStore>.Instance);
+
+        (await store.ReadBinaryAsync("", CancellationToken.None)).Should().BeNull();
+        (await store.ReadBinaryAsync("2024/MISSING/file.pdf", CancellationToken.None)).Should().BeNull();
+    }
 }

@@ -61,6 +61,14 @@ public sealed class LocalDiskBlobStore : IBlobStore
         return await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<byte[]?> ReadBinaryAsync(string path, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return null;
+        var fullPath = ResolveFullPath(path);
+        if (!File.Exists(fullPath)) return null;
+        return await File.ReadAllBytesAsync(fullPath, cancellationToken).ConfigureAwait(false);
+    }
+
     private string ResolveFullPath(string path) =>
         Path.Combine(_rootPath, path.Replace('/', Path.DirectorySeparatorChar));
 
