@@ -11,19 +11,7 @@
     <div class="alert alert-danger">@Model.ErrorMessage</div>
 }
 
-@if (Model.IssuedPolicyNumber is not null)
-{
-    <div class="alert alert-success">
-        Póliza emitida: <strong>@Model.IssuedPolicyNumber</strong>
-        @if (!string.IsNullOrWhiteSpace(Model.PdfBlobRef))
-        {
-            <br /><small>PDF: <code>@Model.PdfBlobRef</code></small>
-        }
-    </div>
-}
-else
-{
-    <form method="post">
+<form method="post">
         <input type="hidden" asp-for="Input.QuotationInsurerResultId" />
 
         @* Resumen de errores de ModelState — sin esto la página re-renderiza
@@ -209,4 +197,3 @@ else
             cpInput.addEventListener('change', resolve);
         })();
     </script>
-}

@@ -176,6 +176,7 @@ public static class DependencyInjection
         services.AddScoped<ProcessQuotation>();
         services.AddScoped<RequoteInsurerResult>();
         services.AddScoped<McBrokers.Application.Emissions.EmitPolicy>();
+        services.AddScoped<McBrokers.Application.Emissions.SendPolicyEmail>();
 
         // DataProtection — keyring local en %LOCALAPPDATA%\ASP.NET\DataProtection-Keys.
         // Para prod en Azure: PersistKeysToAzureBlobStorage + ProtectKeysWithAzureKeyVault.

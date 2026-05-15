@@ -28,8 +28,6 @@ public class IndexModel : PageModel
     public InputModel Input { get; set; } = new();
 
     public string? ErrorMessage { get; private set; }
-    public string? IssuedPolicyNumber { get; private set; }
-    public string? PdfBlobRef { get; private set; }
 
     // Hidratado server-side cuando entras a la página — el CP del Quotation
     // se pre-llena y el resolver SEPOMEX nos da Estado/Municipio/Asentamientos
@@ -103,8 +101,9 @@ public class IndexModel : PageModel
 
         if (result.Value.Status == EmissionStatus.Issued)
         {
-            IssuedPolicyNumber = result.Value.PolicyNumber;
-            return Page();
+            return RedirectToPage(
+                "/Emision/Confirmacion",
+                new { emissionId = result.Value.EmissionId });
         }
 
         ErrorMessage = "La aseguradora rechazó la emisión. Revisa los detalles capturados o intenta más tarde.";
