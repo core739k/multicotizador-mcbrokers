@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <ns:getCatalogosPorTarifaYNombreResponse xmlns:ns="https://agentes.axa.com.mx/EmisionPolizasWS/services/SolicitudPolizasService">
+      <getCatalogosPorTarifaYNombreReturn>&lt;catalogos&gt;&lt;catalogo&gt;&lt;registro&gt;&lt;campo nombre="idMarca" valor="1"/&gt;&lt;campo nombre="idTipoVehiculo" valor="2"/&gt;&lt;campo nombre="descripcion" valor="COROLLA SE 1.8L"/&gt;&lt;campo nombre="idTipo" valor="5"/&gt;&lt;campo nombre="claveAMIS" valor="01234"/&gt;&lt;campo nombre="modeloDesde" valor="2020"/&gt;&lt;campo nombre="modeloHasta" valor="2028"/&gt;&lt;/registro&gt;&lt;/catalogo&gt;&lt;/catalogos&gt;</getCatalogosPorTarifaYNombreReturn>
+    </ns:getCatalogosPorTarifaYNombreResponse>
+  </soap:Body>
+</soap:Envelope>

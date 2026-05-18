@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <ns:getCatalogosPorTarifaYNombreResponse xmlns:ns="https://agentes.axa.com.mx/EmisionPolizasWS/services/SolicitudPolizasService">
+      <getCatalogosPorTarifaYNombreReturn>&lt;catalogos&gt;&lt;catalogo&gt;&lt;registro&gt;&lt;campo nombre="idMarca" valor="1"/&gt;&lt;campo nombre="idTipoVehiculo" valor="1"/&gt;&lt;campo nombre="descripcion" valor="TOYOTA"/&gt;&lt;/registro&gt;&lt;registro&gt;&lt;campo nombre="idMarca" valor="2"/&gt;&lt;campo nombre="idTipoVehiculo" valor="2"/&gt;&lt;campo nombre="descripcion" valor="HONDA"/&gt;&lt;/registro&gt;&lt;/catalogo&gt;&lt;/catalogos&gt;</getCatalogosPorTarifaYNombreReturn>
+    </ns:getCatalogosPorTarifaYNombreResponse>
+  </soap:Body>
+</soap:Envelope>
