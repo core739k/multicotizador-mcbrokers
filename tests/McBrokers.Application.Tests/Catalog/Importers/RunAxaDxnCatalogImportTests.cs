@@ -20,10 +20,10 @@ public class RunAxaDxnCatalogImportTests
 
     private readonly Mock<IInsurerRepository> _insurers = new(MockBehavior.Strict);
     private readonly Mock<IAxaDxnConfigRepository> _axaConfigs = new(MockBehavior.Strict);
-    private readonly Mock<IInsurerConfigRepository> _insurerConfigs = new(MockBehavior.Strict);
     private readonly Mock<IImportInsurerCatalog> _importer = new(MockBehavior.Strict);
     private readonly Mock<IClock> _clock = new(MockBehavior.Strict);
     private readonly FakeAxaDxnCatalogClient _client = new();
+    private AxaDxnCatalogSettings _settings = new(CatalogEndpointOverride: null);
 
     public RunAxaDxnCatalogImportTests()
     {
@@ -31,10 +31,10 @@ public class RunAxaDxnCatalogImportTests
     }
 
     private RunAxaDxnCatalogImport Build() =>
-        new(_insurers.Object, _axaConfigs.Object, _insurerConfigs.Object,
+        new(_insurers.Object, _axaConfigs.Object, _settings,
             _client, _clock.Object, _importer.Object);
 
-    private void SetupHappyPath_NoInsurerConfig()
+    private void SetupHappyPath()
     {
         var axa = Insurer.Create(InsurerCode.AxaDxn, "AXA DXN", displayOrder: 0).Value;
         _insurers.Setup(r => r.GetByIdAsync(InsurerId, It.IsAny<CancellationToken>())).ReturnsAsync(axa);
@@ -52,9 +52,6 @@ public class RunAxaDxnCatalogImportTests
             copsisB: "b").Value;
         _axaConfigs.Setup(r => r.GetByInsurerIdAsync(InsurerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AxaDxnConfigWithBusinesses(cfg, Array.Empty<AxaDxnBusiness>()));
-
-        _insurerConfigs.Setup(r => r.GetAsync(InsurerId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((InsurerConfig?)null);
     }
 
     private void SetupImporterEcho()
@@ -69,7 +66,7 @@ public class RunAxaDxnCatalogImportTests
     [Fact]
     public async Task Happy_path_invokes_client_four_times_in_marca_then_submarca_per_tarifa_order()
     {
-        SetupHappyPath_NoInsurerConfig();
+        SetupHappyPath();
         SetupImporterEcho();
         _client.SetEmptyResponseForAll();
 
@@ -128,7 +125,7 @@ public class RunAxaDxnCatalogImportTests
     [Fact]
     public async Task Client_failure_propagates_and_stops_pipeline_without_invoking_importer()
     {
-        SetupHappyPath_NoInsurerConfig();
+        SetupHappyPath();
         // First call (TAR-AUTOS, Marca) succeeds. Second call (TAR-AUTOS, Submarca) fails.
         _client.Queue(Result<IReadOnlyList<AxaDxnCatalogRecord>>.Success(Array.Empty<AxaDxnCatalogRecord>()));
         _client.Queue(Result<IReadOnlyList<AxaDxnCatalogRecord>>.Failure("HTTP_500"));
@@ -146,7 +143,7 @@ public class RunAxaDxnCatalogImportTests
     [Fact]
     public async Task Rows_passed_to_importer_have_brand_resolved_from_marca_catalog()
     {
-        SetupHappyPath_NoInsurerConfig();
+        SetupHappyPath();
         SetupImporterEcho();
 
         _client.Queue(SingleMarca(idMarca: "42", descripcion: "TOYOTA"));
@@ -164,7 +161,7 @@ public class RunAxaDxnCatalogImportTests
     [Fact]
     public async Task Submarca_with_brand_not_in_marca_catalog_is_dropped()
     {
-        SetupHappyPath_NoInsurerConfig();
+        SetupHappyPath();
         SetupImporterEcho();
 
         _client.Queue(SingleMarca(idMarca: "42", descripcion: "TOYOTA"));
@@ -187,7 +184,7 @@ public class RunAxaDxnCatalogImportTests
     [InlineData("24")]
     public async Task Excluded_idTipoVehiculo_in_submarca_is_filtered_out(string excludedType)
     {
-        SetupHappyPath_NoInsurerConfig();
+        SetupHappyPath();
         SetupImporterEcho();
 
         _client.Queue(SingleMarca(idMarca: "42", descripcion: "TOYOTA"));
@@ -207,7 +204,7 @@ public class RunAxaDxnCatalogImportTests
     [Fact]
     public async Task Marca_with_excluded_idTipoVehiculo_drops_all_its_submarcas()
     {
-        SetupHappyPath_NoInsurerConfig();
+        SetupHappyPath();
         SetupImporterEcho();
 
         // Marca 42 only appears with idTipoVehiculo=22 (excluded) → brand lookup fails.
@@ -225,7 +222,7 @@ public class RunAxaDxnCatalogImportTests
     [Fact]
     public async Task Submarca_is_expanded_one_row_per_year_within_current_year_minus_one_to_current_year()
     {
-        SetupHappyPath_NoInsurerConfig();
+        SetupHappyPath();
         SetupImporterEcho();
 
         _client.Queue(SingleMarca(idMarca: "42", descripcion: "TOYOTA"));
@@ -243,7 +240,7 @@ public class RunAxaDxnCatalogImportTests
     [Fact]
     public async Task Submarca_with_range_fully_outside_year_window_yields_no_rows()
     {
-        SetupHappyPath_NoInsurerConfig();
+        SetupHappyPath();
         SetupImporterEcho();
 
         _client.Queue(SingleMarca(idMarca: "42", descripcion: "TOYOTA"));
@@ -260,7 +257,7 @@ public class RunAxaDxnCatalogImportTests
     [Fact]
     public async Task Submarca_with_range_starting_in_future_year_yields_only_overlap()
     {
-        SetupHappyPath_NoInsurerConfig();
+        SetupHappyPath();
         SetupImporterEcho();
 
         _client.Queue(SingleMarca(idMarca: "42", descripcion: "TOYOTA"));
@@ -278,7 +275,7 @@ public class RunAxaDxnCatalogImportTests
     [Fact]
     public async Task Model_is_first_word_of_descripcion_and_version_is_full_descripcion()
     {
-        SetupHappyPath_NoInsurerConfig();
+        SetupHappyPath();
         SetupImporterEcho();
 
         _client.Queue(SingleMarca(idMarca: "42", descripcion: "TOYOTA"));
@@ -296,7 +293,7 @@ public class RunAxaDxnCatalogImportTests
     [Fact]
     public async Task External_clave_contains_claveAmis_and_year_to_satisfy_unique_constraint()
     {
-        SetupHappyPath_NoInsurerConfig();
+        SetupHappyPath();
         SetupImporterEcho();
 
         _client.Queue(SingleMarca(idMarca: "42", descripcion: "TOYOTA"));
@@ -315,7 +312,7 @@ public class RunAxaDxnCatalogImportTests
     [Fact]
     public async Task Importer_is_invoked_with_isSourceOfTruth_true_and_source_AxaDxn_WS()
     {
-        SetupHappyPath_NoInsurerConfig();
+        SetupHappyPath();
         SetupImporterEcho();
         _client.SetEmptyResponseForAll();
 
@@ -328,36 +325,30 @@ public class RunAxaDxnCatalogImportTests
     }
 
     [Fact]
-    public async Task Endpoint_url_from_insurer_config_overrides_hardcoded_default()
+    public async Task Endpoint_url_from_settings_override_takes_precedence_over_default()
     {
-        var axa = Insurer.Create(InsurerCode.AxaDxn, "AXA DXN", displayOrder: 0).Value;
-        _insurers.Setup(r => r.GetByIdAsync(InsurerId, It.IsAny<CancellationToken>())).ReturnsAsync(axa);
-
-        var cfg = AxaDxnConfig.Create(InsurerId, "USER", "secret", "TAR-AUTOS", "TAR-PICKUP", 0, 0, 5, "d4", "b").Value;
-        _axaConfigs.Setup(r => r.GetByInsurerIdAsync(InsurerId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AxaDxnConfigWithBusinesses(cfg, Array.Empty<AxaDxnBusiness>()));
-
-        var custom = InsurerConfig.Create(InsurerId,
-            endpointUrl: "https://custom.axa.example/EmisionPolizasWS/services/SolicitudPolizasService",
-            businessNumber: "B1", agentCode: "A1", keyVaultSecretName: "k", timeoutSeconds: 30, maxRetries: 1).Value;
-        _insurerConfigs.Setup(r => r.GetAsync(InsurerId, It.IsAny<CancellationToken>())).ReturnsAsync(custom);
-
+        SetupHappyPath();
         SetupImporterEcho();
         _client.SetEmptyResponseForAll();
+
+        _settings = new AxaDxnCatalogSettings(
+            CatalogEndpointOverride: "https://staging.axa.example/EmisionPolizasWS/services/SolicitudPolizasService");
 
         await Build().ExecuteAsync(InsurerId, CancellationToken.None);
 
         _client.CapturedCredentials.Should().NotBeNull();
-        _client.CapturedCredentials!.EndpointUrl.Should().Be("https://custom.axa.example/EmisionPolizasWS/services/SolicitudPolizasService");
+        _client.CapturedCredentials!.EndpointUrl
+            .Should().Be("https://staging.axa.example/EmisionPolizasWS/services/SolicitudPolizasService");
     }
 
     [Fact]
-    public async Task Endpoint_url_falls_back_to_hardcoded_default_when_insurer_config_missing()
+    public async Task Endpoint_url_falls_back_to_hardcoded_default_when_no_settings_override()
     {
-        SetupHappyPath_NoInsurerConfig();
+        SetupHappyPath();
         SetupImporterEcho();
         _client.SetEmptyResponseForAll();
 
+        // _settings.CatalogEndpointOverride is null by default.
         await Build().ExecuteAsync(InsurerId, CancellationToken.None);
 
         _client.CapturedCredentials!.EndpointUrl

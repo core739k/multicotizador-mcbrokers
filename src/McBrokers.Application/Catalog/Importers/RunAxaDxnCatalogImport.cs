@@ -23,7 +23,7 @@ public sealed class RunAxaDxnCatalogImport
 
     private readonly IInsurerRepository _insurers;
     private readonly IAxaDxnConfigRepository _axaConfigs;
-    private readonly IInsurerConfigRepository _insurerConfigs;
+    private readonly AxaDxnCatalogSettings _settings;
     private readonly IAxaDxnCatalogClient _client;
     private readonly IClock _clock;
     private readonly IImportInsurerCatalog _importer;
@@ -31,14 +31,14 @@ public sealed class RunAxaDxnCatalogImport
     public RunAxaDxnCatalogImport(
         IInsurerRepository insurers,
         IAxaDxnConfigRepository axaConfigs,
-        IInsurerConfigRepository insurerConfigs,
+        AxaDxnCatalogSettings settings,
         IAxaDxnCatalogClient client,
         IClock clock,
         IImportInsurerCatalog importer)
     {
         _insurers = insurers;
         _axaConfigs = axaConfigs;
-        _insurerConfigs = insurerConfigs;
+        _settings = settings;
         _client = client;
         _clock = clock;
         _importer = importer;
@@ -64,8 +64,12 @@ public sealed class RunAxaDxnCatalogImport
             return Result<RunAxaDxnCatalogImportResult>.Failure("AXA_DXN_CONFIG_MISSING");
         }
 
-        var insurerCfg = await _insurerConfigs.GetAsync(insurerId, cancellationToken).ConfigureAwait(false);
-        var endpoint = insurerCfg?.EndpointUrl ?? FallbackEndpoint;
+        // Catálogo siempre va al WS de SolicitudPolizasService.
+        // InsurerConfig.EndpointUrl NO se considera aquí porque apunta al WS
+        // de cotización (FlotillasService, otro path en el mismo host) — usar
+        // ese URL devuelve HTTP 500 porque no expone getCatalogosPorTarifaYNombre.
+        // Override solo via appsettings:AxaDxn:CatalogEndpoint para staging/sandbox.
+        var endpoint = _settings.CatalogEndpointOverride ?? FallbackEndpoint;
 
         var credentials = new AxaDxnCatalogCredentials(
             configWB.Config.Usuario, configWB.Config.Password, endpoint);

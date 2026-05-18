@@ -2,6 +2,7 @@ using McBrokers.Application.Admin;
 using McBrokers.Application.Agents;
 using McBrokers.Application.Auth;
 using McBrokers.Application.Catalog;
+using McBrokers.Application.Catalog.Importers;
 using McBrokers.Application.Ports;
 using McBrokers.Application.Postal;
 using McBrokers.Application.Quotations;
@@ -171,7 +172,12 @@ public static class DependencyInjection
         services.AddScoped<GetQuotationAdminDetail>();
         services.AddScoped<ImportInsurerCatalog>();
         services.AddScoped<IImportInsurerCatalog>(sp => sp.GetRequiredService<ImportInsurerCatalog>());
-        services.AddScoped<McBrokers.Application.Catalog.Importers.RunAxaDxnCatalogImport>();
+        // appsettings:AxaDxn:CatalogEndpoint sobreescribe el default hardcoded
+        // (SolicitudPolizasService) — útil para sandbox/staging. Si está vacío
+        // o ausente, RunAxaDxnCatalogImport usa el endpoint productivo conocido.
+        services.AddSingleton(new AxaDxnCatalogSettings(
+            CatalogEndpointOverride: configuration["AxaDxn:CatalogEndpoint"]));
+        services.AddScoped<RunAxaDxnCatalogImport>();
         services.AddScoped<DecideMapping>();
         services.AddScoped<GetCatalogForYear>();
         services.AddScoped<ListPendingMappings>();
