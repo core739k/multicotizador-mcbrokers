@@ -29,6 +29,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" />
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Serilog.Sinks.File" />
     <PackageReference Include="Serilog.Sinks.ApplicationInsights" />
     <PackageReference Include="Serilog.Enrichers.Environment" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" />

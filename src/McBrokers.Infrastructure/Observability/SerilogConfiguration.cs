@@ -14,6 +14,9 @@ namespace McBrokers.Infrastructure.Observability;
 /// </summary>
 public static class SerilogConfiguration
 {
+    private const string OutputTemplate =
+        "[{Timestamp:HH:mm:ss} {Level:u3}] {CorrelationId} {AgentId} {Message:lj}{NewLine}{Exception}";
+
     public static IHostBuilder UseMcBrokersSerilog(this IHostBuilder builder) =>
         builder.UseSerilog((context, services, lc) =>
         {
@@ -23,9 +26,22 @@ public static class SerilogConfiguration
               .Enrich.FromLogContext()
               .Enrich.WithMachineName()
               .Enrich.WithEnvironmentName()
-              .WriteTo.Console(
-                  outputTemplate:
-                    "[{Timestamp:HH:mm:ss} {Level:u3}] {CorrelationId} {AgentId} {Message:lj}{NewLine}{Exception}");
+              .WriteTo.Console(outputTemplate: OutputTemplate);
+
+            // Sink de archivo con rolling diario. El nombre de archivo deriva del
+            // ApplicationName del host (McBrokers.Api / McBrokers.Web) → logs/api-AAAAMMDD.log
+            // y logs/web-AAAAMMDD.log. Path relativo al ContentRootPath del proceso.
+            var appShort = (context.HostingEnvironment.ApplicationName ?? "app")
+                .Replace("McBrokers.", string.Empty, StringComparison.OrdinalIgnoreCase)
+                .ToLowerInvariant();
+            var logPath = Path.Combine(
+                context.HostingEnvironment.ContentRootPath, "..", "..", "logs", $"{appShort}-.log");
+            lc.WriteTo.File(
+                path: logPath,
+                rollingInterval: RollingInterval.Day,
+                outputTemplate: OutputTemplate,
+                retainedFileCountLimit: 14,
+                shared: true);
 
             var appInsightsConn = context.Configuration["ApplicationInsights:ConnectionString"]
                 ?? context.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
