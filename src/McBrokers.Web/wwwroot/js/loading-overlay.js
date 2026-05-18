@@ -99,14 +99,6 @@
             preventDoubleSubmit(form);
             disableForm(form);
             show(msg);
-
-            // Aviso si el usuario intenta cerrar/recargar mientras está en vuelo.
-            const beforeUnload = function (e) {
-                e.preventDefault();
-                e.returnValue = '';
-            };
-            window.addEventListener('beforeunload', beforeUnload);
-            // beforeUnload se libera naturalmente al navegar a la nueva respuesta.
         });
     }
 
