@@ -10,6 +10,7 @@ using McBrokers.Domain.Insurers;
 using McBrokers.Infrastructure.Audit;
 using McBrokers.Infrastructure.Blob;
 using McBrokers.Infrastructure.Identity;
+using McBrokers.Infrastructure.InsurerCatalogs;
 using McBrokers.Infrastructure.Messaging;
 using McBrokers.Infrastructure.Observability;
 using McBrokers.Infrastructure.Persistence;
@@ -117,6 +118,10 @@ public static class DependencyInjection
         services.AddHttpClient<AxaColQuoteAdapter>().AddMcBrokersResilience();
         services.AddHttpClient<AxaDxnQuoteAdapter>().AddMcBrokersResilience();
         services.AddHttpClient<McBrokers.Insurers.AxaDxn.Mapping.AxaDxnEmissionExecutor>().AddMcBrokersResilience();
+        // Cliente del WS de catálogo AXA DXN (getCatalogosPorTarifaYNombre).
+        // Timeout más largo que cotización: el catálogo completo puede pesar varios MB.
+        services.AddHttpClient<IAxaDxnCatalogClient, AxaDxnCatalogHttpClient>(c =>
+            c.Timeout = TimeSpan.FromSeconds(120)).AddMcBrokersResilience();
 
         // SEPOMEX — autocompletar Estado/Municipio/Colonia desde CP en /Emision.
         // BaseUrl configurable via "Sepomex:BaseUrl" en appsettings; trailing slash
@@ -165,6 +170,8 @@ public static class DependencyInjection
         services.AddScoped<ListRecentQuotations>();
         services.AddScoped<GetQuotationAdminDetail>();
         services.AddScoped<ImportInsurerCatalog>();
+        services.AddScoped<IImportInsurerCatalog>(sp => sp.GetRequiredService<ImportInsurerCatalog>());
+        services.AddScoped<McBrokers.Application.Catalog.Importers.RunAxaDxnCatalogImport>();
         services.AddScoped<DecideMapping>();
         services.AddScoped<GetCatalogForYear>();
         services.AddScoped<ListPendingMappings>();
