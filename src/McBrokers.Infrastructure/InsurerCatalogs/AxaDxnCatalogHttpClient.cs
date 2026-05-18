@@ -33,6 +33,10 @@ public sealed class AxaDxnCatalogHttpClient : IAxaDxnCatalogClient
     {
         var soapXml = AxaDxnCatalogSoapBuilder.Build(tarifa, nombreCatalogo);
 
+        _logger.LogInformation(
+            "AXA DXN CATALOG REQUEST tarifa={Tarifa} catalogo={Catalogo} endpoint={Endpoint} body={Body}",
+            tarifa, nombreCatalogo, credentials.EndpointUrl, soapXml);
+
         using var content = new StringContent(soapXml, Encoding.UTF8);
         content.Headers.ContentType = new MediaTypeHeaderValue("text/xml") { CharSet = "utf-8" };
 
