@@ -1,0 +1,77 @@
+@page
+@using McBrokers.Domain.Insurers
+@model McBrokers.Web.Pages.Admin.Catalog.ImportModel
+@{
+    ViewData["Title"] = "Importar catálogo";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Importar catálogo por aseguradora</h2>
+    <a class="btn btn-outline-secondary" asp-page="./Pending">Ver pendientes de revisión</a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.Message))
+{
+    <div class="alert alert-success">@Model.Message</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">
+        <strong>Error:</strong> @Model.ErrorMessage
+    </div>
+}
+
+@if (!Model.Insurers.Any())
+{
+    <p class="text-muted">No hay aseguradoras configuradas.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Aseguradora</th>
+                <th>Código</th>
+                <th>Estado</th>
+                <th class="text-end">Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var insurer in Model.Insurers)
+            {
+                <tr>
+                    <td>@insurer.Name</td>
+                    <td><code>@insurer.Code</code></td>
+                    <td>
+                        @if (insurer.IsEnabled)
+                        {
+                            <span class="badge bg-success">Activa</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactiva</span>
+                        }
+                    </td>
+                    <td class="text-end">
+                        @if (insurer.Code == InsurerCode.AxaDxn && insurer.IsEnabled)
+                        {
+                            <form method="post" asp-page-handler="AxaDxn" class="d-inline">
+                                <input type="hidden" name="insurerId" value="@insurer.Id" />
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    Importar catálogo (AXA DXN)
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-secondary" disabled>
+                                No disponible aún
+                            </button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
