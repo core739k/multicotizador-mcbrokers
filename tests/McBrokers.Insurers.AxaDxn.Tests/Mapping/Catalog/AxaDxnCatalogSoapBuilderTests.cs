@@ -47,6 +47,53 @@ public class AxaDxnCatalogSoapBuilderTests
         soap.Should().NotContain("FOO&BAR<X>", "raw '<' inside an attribute/element value must be escaped to &lt;");
     }
 
+    [Fact]
+    public void Operation_carries_soap_encoding_style_attribute_for_axis_rpc_encoded()
+    {
+        // Apache Axis 1.x rechaza con HTTP 500 si falta soapenv:encodingStyle="...soap/encoding/".
+        // El legacy CatalogoVehiculosNegocio:1525 lo incluye literal.
+        var soap = AxaDxnCatalogSoapBuilder.Build("TB7144", "Marca");
+
+        var doc = XDocument.Parse(soap);
+        var op = doc.Descendants().Single(e => e.Name.LocalName == "getCatalogosPorTarifaYNombre");
+
+        var encodingStyle = op.Attribute(
+            XName.Get("encodingStyle", "http://schemas.xmlsoap.org/soap/envelope/"));
+        encodingStyle.Should().NotBeNull();
+        encodingStyle!.Value.Should().Be("http://schemas.xmlsoap.org/soap/encoding/");
+    }
+
+    [Fact]
+    public void Parameters_carry_xsi_type_xsd_string_for_rpc_encoded_deserialization()
+    {
+        // Axis 1.x usa xsi:type para resolver el binding de los parámetros en RPC/encoded.
+        var soap = AxaDxnCatalogSoapBuilder.Build("TB7144", "Marca");
+
+        var doc = XDocument.Parse(soap);
+        var xsi = XNamespace.Get("http://www.w3.org/2001/XMLSchema-instance");
+
+        var tarifa = doc.Descendants().Single(e => e.Name.LocalName == "tarifa");
+        tarifa.Attribute(xsi + "type")!.Value.Should().Be("xsd:string");
+
+        var nombreCatalogo = doc.Descendants().Single(e => e.Name.LocalName == "nombreCatalogo");
+        nombreCatalogo.Attribute(xsi + "type")!.Value.Should().Be("xsd:string");
+    }
+
+    [Fact]
+    public void Envelope_declares_xsi_and_xsd_namespaces_for_type_hint_resolution()
+    {
+        // El prefix "xsd" en xsi:type="xsd:string" debe estar declarado en el Envelope,
+        // o el parser Axis no resuelve el namespace y rechaza el request.
+        var soap = AxaDxnCatalogSoapBuilder.Build("TB7144", "Marca");
+
+        var doc = XDocument.Parse(soap);
+        var envelope = doc.Root!;
+        var xmlns = XNamespace.Xmlns;
+
+        envelope.Attribute(xmlns + "xsi")!.Value.Should().Be("http://www.w3.org/2001/XMLSchema-instance");
+        envelope.Attribute(xmlns + "xsd")!.Value.Should().Be("http://www.w3.org/2001/XMLSchema");
+    }
+
     [Theory]
     [InlineData(null, "Marca")]
     [InlineData("", "Marca")]

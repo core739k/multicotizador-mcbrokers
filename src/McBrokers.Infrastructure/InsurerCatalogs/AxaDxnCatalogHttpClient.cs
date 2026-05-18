@@ -53,9 +53,12 @@ public sealed class AxaDxnCatalogHttpClient : IAxaDxnCatalogClient
 
             if (!response.IsSuccessStatusCode)
             {
+                // Loguear el body (truncado a 2KB) ayuda a diagnosticar fallos del WS de AXA
+                // donde el SOAP Fault de Axis trae el stack trace Java en el cuerpo.
+                var truncated = body.Length > 2048 ? body[..2048] + "…(truncated)" : body;
                 _logger.LogWarning(
-                    "AXA DXN catálogo respondió HTTP {Status} para tarifa={Tarifa} catalogo={Catalogo}",
-                    (int)response.StatusCode, tarifa, nombreCatalogo);
+                    "AXA DXN catálogo respondió HTTP {Status} para tarifa={Tarifa} catalogo={Catalogo}. Body: {Body}",
+                    (int)response.StatusCode, tarifa, nombreCatalogo, truncated);
                 return Result<IReadOnlyList<AxaDxnCatalogRecord>>.Failure(
                     $"HTTP_{(int)response.StatusCode}: {response.ReasonPhrase}");
             }
