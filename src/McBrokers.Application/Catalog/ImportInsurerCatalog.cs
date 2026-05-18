@@ -18,7 +18,7 @@ public sealed record ImportInsurerCatalogResult(
     int PendingReview,
     int Rejected);
 
-public sealed class ImportInsurerCatalog
+public sealed class ImportInsurerCatalog : IImportInsurerCatalog
 {
     private readonly IVehicleMasterRepository _masters;
     private readonly IVehicleInsurerMappingRepository _mappings;
